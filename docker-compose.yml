@@ -1,0 +1,14 @@
+version: "1.0"
+
+services:
+  simpel:
+    build:
+      dockerfile: ./Dockerfile
+    ports:
+      - "8080:8081"
+    networks:
+      - simpel-network
+
+networks:
+  simpel-network:
+    driver: bridge
