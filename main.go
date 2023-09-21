@@ -14,6 +14,7 @@ import (
 
 func main() {
 	var m string
+	var s string
 
 	database.CreateConnection()
 
@@ -24,10 +25,21 @@ func main() {
 		`This flag is used for migration`,
 	)
 
+	flag.StringVar(
+		&s,
+		"s",
+		"none",
+		`This flag is used for migration`,
+	)
+
 	flag.Parse()
 
 	if m == "migrate" {
 		migration.Migrate()
+	}
+
+	if s == "seeder" {
+
 	}
 
 	f := factory.NewFactory() // Database instance initialization
