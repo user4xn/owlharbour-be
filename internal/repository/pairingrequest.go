@@ -26,12 +26,22 @@ func NewPairingRequestRepository(db *gorm.DB) PairingRequest {
 }
 
 func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.PairingRequest) error {
+	existingDevice := model.PairingRequest{}
+	if err := r.Db.Where("device_id = ?", request.DeviceID).Order("created_at DESC").First(&existingDevice).Error; err == nil {
+		if existingDevice.Status == "pending" {
+			return fmt.Errorf("a pending pairing request with the same DeviceID already exists")
+		} else if existingDevice.Status == "approved" {
+			return fmt.Errorf("this device already registered at " + existingDevice.CreatedAt.Format("2006-01-02"))
+		}
+	}
+
 	pairingModel := model.PairingRequest{
-		Name:          request.ShipName,
-		Phone:         request.Phone,
-		DeviceID:      request.DeviceID,
-		FirebaseToken: request.FirebaseToken,
-		Status:        "pending",
+		Name:            request.ShipName,
+		Phone:           request.Phone,
+		ResponsibleName: request.ResponsibleName,
+		DeviceID:        request.DeviceID,
+		FirebaseToken:   request.FirebaseToken,
+		Status:          "pending",
 	}
 
 	return r.Db.Create(&pairingModel).Error
@@ -59,13 +69,14 @@ func (r *pairingRequest) PairingRequestList(ctx context.Context, request dto.Pai
 	var pairingList []dto.PairingRequestResponse
 	for _, e := range pairingRequest {
 		pairingList = append(pairingList, dto.PairingRequestResponse{
-			ID:            e.ID,
-			ShipName:      e.Name,
-			Phone:         e.Phone,
-			DeviceID:      e.DeviceID,
-			FirebaseToken: e.FirebaseToken,
-			Status:        string(e.Status),
-			CreatedAt:     e.CreatedAt.Format("2006-01-02"),
+			ID:              e.ID,
+			ShipName:        e.Name,
+			Phone:           e.Phone,
+			ResponsibleName: e.ResponsibleName,
+			DeviceID:        e.DeviceID,
+			FirebaseToken:   e.FirebaseToken,
+			Status:          string(e.Status),
+			CreatedAt:       e.CreatedAt.Format("2006-01-02"),
 		})
 	}
 
@@ -93,13 +104,14 @@ func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, request dto.P
 	}
 
 	pairingData := dto.PairingRequestResponse{
-		ID:            pairing.ID,
-		ShipName:      pairing.Name,
-		Phone:         pairing.Phone,
-		DeviceID:      pairing.DeviceID,
-		FirebaseToken: pairing.FirebaseToken,
-		Status:        request.Status,
-		CreatedAt:     pairing.CreatedAt.Format("2006-01-02"),
+		ID:              pairing.ID,
+		ShipName:        pairing.Name,
+		Phone:           pairing.Phone,
+		ResponsibleName: pairing.ResponsibleName,
+		DeviceID:        pairing.DeviceID,
+		FirebaseToken:   pairing.FirebaseToken,
+		Status:          request.Status,
+		CreatedAt:       pairing.CreatedAt.Format("2006-01-02"),
 	}
 
 	return &pairingData, nil

@@ -1,11 +1,12 @@
 package dto
 
 type PairingRequest struct {
-	HarbourCode   int    `json:"harbour_code" binding:"required"`
-	ShipName      string `json:"ship_name" binding:"required"`
-	Phone         string `json:"phone" binding:"required"`
-	DeviceID      string `json:"device_id" binding:"required"`
-	FirebaseToken string `json:"firebase_token" binding:"required"`
+	HarbourCode     int    `json:"harbour_code" binding:"required"`
+	ShipName        string `json:"ship_name" binding:"required"`
+	Phone           string `json:"phone" binding:"required"`
+	ResponsibleName string `json:"responsible_name" binding:"required"`
+	DeviceID        string `json:"device_id" binding:"required"`
+	FirebaseToken   string `json:"firebase_token" binding:"required"`
 }
 
 type PairingActionRequest struct {
@@ -14,13 +15,14 @@ type PairingActionRequest struct {
 }
 
 type PairingRequestResponse struct {
-	ID            int    `json:"id"`
-	ShipName      string `json:"ship_name"`
-	Phone         string `json:"phone"`
-	DeviceID      string `json:"device_id"`
-	FirebaseToken string `json:"firebase_token"`
-	Status        string `json:"status"`
-	CreatedAt     string `json:"created_at"`
+	ID              int    `json:"id"`
+	ShipName        string `json:"ship_name"`
+	Phone           string `json:"phone"`
+	ResponsibleName string `json:"responsible_name"`
+	DeviceID        string `json:"device_id"`
+	FirebaseToken   string `json:"firebase_token"`
+	Status          string `json:"status"`
+	CreatedAt       string `json:"created_at"`
 }
 
 type PairingListParam struct {

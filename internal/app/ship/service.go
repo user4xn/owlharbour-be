@@ -78,12 +78,12 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 		CreatedAt:     res.CreatedAt,
 	}
 
-	if request.Status == "approved" {
-		appInfo, err := s.appRepository.AppInfo(ctx)
-		if err != nil {
-			return err
-		}
+	appInfo, err := s.appRepository.AppInfo(ctx)
+	if err != nil {
+		return err
+	}
 
+	if request.Status == "approved" {
 		err = s.shipRepository.StoreNewShip(ctx, pairingData)
 		if err != nil {
 			return err
@@ -95,9 +95,20 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 		}
 		tokens := []string{res.FirebaseToken}
 
-		_, err = helper.PushNotification(notificationData, tokens)
+		_, err := helper.PushNotification(notificationData, tokens)
 		if err != nil {
-			return err
+			fmt.Println(err)
+		}
+	} else {
+		notificationData := map[string]interface{}{
+			"title": "SIMPEL - PAIRING REJECTED",
+			"body":  "Mohon maaf pairing request device anda dengan Pelabuhan " + appInfo.HarbourName + "ditolak, anda dapat mengajukan kembali di lain waktu",
+		}
+		tokens := []string{res.FirebaseToken}
+
+		_, err := helper.PushNotification(notificationData, tokens)
+		if err != nil {
+			fmt.Println(err)
 		}
 	}
 

@@ -24,11 +24,12 @@ func NewShipRepository(db *gorm.DB) Ship {
 
 func (r *ship) StoreNewShip(ctx context.Context, request dto.PairingRequestResponse) error {
 	shipModel := model.Ship{
-		Name:          request.ShipName,
-		Phone:         request.Phone,
-		DeviceID:      request.DeviceID,
-		FirebaseToken: request.FirebaseToken,
-		Status:        "out of scope",
+		Name:            request.ShipName,
+		Phone:           request.Phone,
+		ResponsibleName: request.ResponsibleName,
+		DeviceID:        request.DeviceID,
+		FirebaseToken:   request.FirebaseToken,
+		Status:          "out of scope",
 	}
 
 	return r.Db.Create(&shipModel).Error
