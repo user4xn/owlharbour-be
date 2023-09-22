@@ -10,4 +10,7 @@ func (h *handler) Router(g *gin.RouterGroup) {
 	g.POST("/pairing", h.PairingShip)
 	g.GET("/pairing-request", h.PairingRequestList)
 	g.PUT("/pairing/action", h.PairingAction)
+
+	g.GET("/list", h.ShipList)
+	g.GET("/by-device/:device_id", h.ShipByDevice)
 }

@@ -21,6 +21,8 @@ type Service interface {
 	PairingShip(ctx context.Context, request dto.PairingRequest) error
 	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
 	PairingAction(ctx context.Context, request dto.PairingActionRequest) error
+	ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipDetailResponse, error)
+	ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -69,13 +71,14 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 	}
 
 	pairingData := dto.PairingRequestResponse{
-		ID:            res.ID,
-		ShipName:      res.ShipName,
-		Phone:         res.Phone,
-		DeviceID:      res.DeviceID,
-		FirebaseToken: res.FirebaseToken,
-		Status:        res.Status,
-		CreatedAt:     res.CreatedAt,
+		ID:              res.ID,
+		ShipName:        res.ShipName,
+		Phone:           res.Phone,
+		ResponsibleName: res.ResponsibleName,
+		DeviceID:        res.DeviceID,
+		FirebaseToken:   res.FirebaseToken,
+		Status:          res.Status,
+		CreatedAt:       res.CreatedAt,
 	}
 
 	appInfo, err := s.appRepository.AppInfo(ctx)
@@ -113,4 +116,22 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 	}
 
 	return nil
+}
+
+func (s *service) ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error) {
+	res, err := s.shipRepository.ShipList(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (s *service) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipDetailResponse, error) {
+	res, err := s.shipRepository.ShipByDevice(ctx, DeviceID)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
