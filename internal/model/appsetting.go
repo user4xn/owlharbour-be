@@ -1,7 +1,7 @@
 package model
 
 type AppSetting struct {
-	Common
+	HarbourCode     int      `gorm:"integer"`
 	HarbourName     string   `gorm:"varchar"`
 	Mode            ModeType `gorm:"enum:interval,range"`
 	ApkMinVersion   string   `gorm:"varchar"`

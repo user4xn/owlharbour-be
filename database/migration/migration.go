@@ -9,6 +9,7 @@ var tables = []interface{}{
 	&model.User{},
 	&model.AppSetting{},
 	&model.AppGeofence{},
+	&model.PairingRequest{},
 	&model.Ship{},
 	&model.ShipLocationLog{},
 	&model.ShipDockedLog{},

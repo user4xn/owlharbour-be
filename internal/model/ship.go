@@ -3,6 +3,7 @@ package model
 type Ship struct {
 	Common
 	Name          string     `gorm:"varchar"`
+	Phone         string     `gorm:"varchar"`
 	DeviceID      string     `gorm:"varchar"`
 	FirebaseToken string     `gorm:"varchar"`
 	Status        ShipStatus `gorm:"enum:checkin,checkout,out of scope"`
@@ -12,5 +13,5 @@ type Ship struct {
 }
 
 func (Ship) TableName() string {
-    return "ships"
+	return "ships"
 }

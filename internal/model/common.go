@@ -29,6 +29,7 @@ func (c *Common) BeforeUpdate(tx *gorm.DB) (err error) {
 }
 
 type ShipStatus string
+type PairingStatus string
 type ModeType string
 type RoleType string
 
@@ -36,6 +37,12 @@ const (
 	Checkin    ShipStatus = "checkin"
 	Checkout   ShipStatus = "checkout"
 	OutOfScope ShipStatus = "out of scope"
+)
+
+const (
+	Pending  PairingStatus = "pending"
+	Approved PairingStatus = "approved"
+	Rejected PairingStatus = "rejected"
 )
 
 const (
@@ -47,3 +54,7 @@ const (
 	SuperAdmin RoleType = "superadmin"
 	Admin      RoleType = "admin"
 )
+
+func (m ModeType) String() string {
+	return string(m)
+}
