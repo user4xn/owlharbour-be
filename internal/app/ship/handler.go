@@ -189,11 +189,16 @@ func (h *handler) RecordLog(c *gin.Context) {
 
 	service := h.service.RecordLocationShip(ctx, request)
 	if service != nil {
-		response := util.APIResponse(service.Error(), http.StatusBadRequest, "failed", nil)
-		c.JSON(http.StatusBadRequest, response)
+		if service == gorm.ErrRecordNotFound {
+			response := util.APIResponse("invalid device id, no ship data", http.StatusBadRequest, "failed", nil)
+			c.JSON(http.StatusBadRequest, response)
+		} else {
+			response := util.APIResponse(service.Error(), http.StatusInternalServerError, "failed", nil)
+			c.JSON(http.StatusInternalServerError, response)
+		}
 		return
 	}
 
 	response := util.APIResponse("Location successfully recorded", http.StatusOK, "success", service)
-	c.JSON(http.StatusOK, response)	
+	c.JSON(http.StatusOK, response)
 }
