@@ -71,7 +71,7 @@ func APIResponse(message string, code int, status string, data interface{}) Resp
 }
 
 func CreateErrorLog(errMessage error) {
-	fileName := fmt.Sprintf("./storage/error_logs/error-%s.log", time.Now().Format("2006-01-02"))
+	fileName := fmt.Sprintf("./storage/error_logs/error-%s.log", time.Now().Format("2006-01-02 15:04:05"))
 
 	// open log file
 	logFile, err := os.OpenFile(fileName, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644)

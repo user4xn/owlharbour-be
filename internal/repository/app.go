@@ -10,6 +10,7 @@ import (
 
 type App interface {
 	AppInfo(ctx context.Context) (*dto.AppInfo, error)
+	GetPolygon(ctx context.Context) ([]dto.HarbourGeofences, error)
 }
 
 type app struct {
@@ -56,4 +57,24 @@ func (r *app) AppInfo(ctx context.Context) (*dto.AppInfo, error) {
 	}
 
 	return res, nil
+}
+
+func (r *app) GetPolygon(ctx context.Context) ([]dto.HarbourGeofences, error) {
+	query := r.Db.Model(&model.AppGeofence{})
+
+	var geofence []model.AppGeofence
+
+	if err := query.Find(&geofence).Error; err != nil {
+		return nil, err
+	}
+
+	var polygon []dto.HarbourGeofences
+	for _, e := range geofence {
+		polygon = append(polygon, dto.HarbourGeofences{
+			Long: e.Long,
+			Lat:  e.Lat,
+		})
+	}
+
+	return polygon, nil
 }

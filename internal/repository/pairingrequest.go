@@ -26,12 +26,16 @@ func NewPairingRequestRepository(db *gorm.DB) PairingRequest {
 }
 
 func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.PairingRequest) error {
+	tx := r.Db.Begin()
+
 	existingDevice := model.PairingRequest{}
-	if err := r.Db.Where("device_id = ?", request.DeviceID).Order("created_at DESC").First(&existingDevice).Error; err == nil {
+	if err := tx.Where("device_id = ?", request.DeviceID).Order("created_at DESC").First(&existingDevice).Error; err == nil {
 		if existingDevice.Status == "pending" {
+			tx.Rollback()
 			return fmt.Errorf("a pending pairing request with the same DeviceID already exists")
 		} else if existingDevice.Status == "approved" {
-			return fmt.Errorf("this device already registered at " + existingDevice.CreatedAt.Format("2006-01-02"))
+			tx.Rollback()
+			return fmt.Errorf("this device already registered at " + existingDevice.CreatedAt.Format("2006-01-02 15:04:05"))
 		}
 	}
 
@@ -44,11 +48,23 @@ func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.P
 		Status:          "pending",
 	}
 
-	return r.Db.Create(&pairingModel).Error
+	if err := tx.Create(&pairingModel).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
 }
 
 func (r *pairingRequest) PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error) {
-	query := r.Db.Model(&model.PairingRequest{})
+	tx := r.Db.Begin()
+
+	query := tx.Model(&model.PairingRequest{})
 
 	if request.Status != nil && request.Status[0] != "" && len(request.Status) > 0 {
 		query = query.Where("status IN (?)", request.Status)
@@ -63,6 +79,7 @@ func (r *pairingRequest) PairingRequestList(ctx context.Context, request dto.Pai
 	var pairingRequest []model.PairingRequest
 
 	if err := query.Find(&pairingRequest).Error; err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -76,21 +93,30 @@ func (r *pairingRequest) PairingRequestList(ctx context.Context, request dto.Pai
 			DeviceID:        e.DeviceID,
 			FirebaseToken:   e.FirebaseToken,
 			Status:          string(e.Status),
-			CreatedAt:       e.CreatedAt.Format("2006-01-02"),
+			CreatedAt:       e.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
 	}
 
 	return pairingList, nil
 }
 
 func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, request dto.PairingActionRequest) (*dto.PairingRequestResponse, error) {
+	tx := r.Db.Begin()
+
 	var pairing model.PairingRequest
-	err := r.Db.First(&pairing, request.PairingID).Error
+	err := tx.First(&pairing, request.PairingID).Error
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
 	if pairing.Status == "approved" || pairing.Status == "rejected" {
+		tx.Rollback()
 		return nil, fmt.Errorf("this pairing request already responded")
 	}
 
@@ -98,8 +124,9 @@ func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, request dto.P
 		Status: model.PairingStatus(request.Status),
 	}
 
-	err = r.Db.Model(&model.PairingRequest{}).Where("id = ?", request.PairingID).Updates(&pairingModel).Error
+	err = tx.Model(&model.PairingRequest{}).Where("id = ?", request.PairingID).Updates(&pairingModel).Error
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -111,7 +138,12 @@ func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, request dto.P
 		DeviceID:        pairing.DeviceID,
 		FirebaseToken:   pairing.FirebaseToken,
 		Status:          request.Status,
-		CreatedAt:       pairing.CreatedAt.Format("2006-01-02"),
+		CreatedAt:       pairing.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
 	}
 
 	return &pairingData, nil

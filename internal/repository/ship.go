@@ -12,6 +12,10 @@ type Ship interface {
 	StoreNewShip(ctx context.Context, request dto.PairingRequestResponse) error
 	ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error)
 	ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipDetailResponse, error)
+	GetLastDockedLog(ctx context.Context, ShipID int) (*dto.ShipDockedLog, error)
+	StoreDockedLog(ctx context.Context, request dto.ShipDockedLogStore) error
+	StoreLocationLog(ctx context.Context, request dto.ShipLocationLogStore) error
+	UpdateShip(ctx context.Context, request model.Ship) error
 }
 
 type ship struct {
@@ -34,11 +38,25 @@ func (r *ship) StoreNewShip(ctx context.Context, request dto.PairingRequestRespo
 		Status:          "out of scope",
 	}
 
-	return r.Db.Create(&shipModel).Error
+	tx := r.Db.Begin()
+
+	if err := tx.Create(&shipModel).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
 }
 
 func (r *ship) ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error) {
-	query := r.Db.Model(&model.Ship{})
+	tx := r.Db.Begin()
+
+	query := tx.Model(&model.Ship{})
 
 	if request.Status != nil && request.Status[0] != "" && len(request.Status) > 0 {
 		query = query.Where("status IN (?)", request.Status)
@@ -53,6 +71,7 @@ func (r *ship) ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.S
 	var ship []model.Ship
 
 	if err := query.Find(&ship).Error; err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -65,17 +84,25 @@ func (r *ship) ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.S
 			DeviceID:        e.DeviceID,
 			OnGround:        e.OnGround,
 			Status:          string(e.Status),
-			CreatedAt:       e.CreatedAt.Format("2006-01-02"),
+			CreatedAt:       e.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
 	}
 
 	return shipList, nil
 }
 
 func (r *ship) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipDetailResponse, error) {
+	tx := r.Db.Begin()
+
 	var ship model.Ship
-	err := r.Db.Where("device_id = ?", DeviceID).First(&ship).Error
+	err := tx.Where("device_id = ?", DeviceID).First(&ship).Error
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -89,8 +116,114 @@ func (r *ship) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipDeta
 		FirebaseToken:   ship.FirebaseToken,
 		Status:          string(ship.Status),
 		OnGround:        ship.OnGround,
-		CreatedAt:       ship.CreatedAt.Format("2006-01-02"),
+		CreatedAt:       ship.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
 	}
 
 	return &shipDetail, nil
+}
+
+func (r *ship) GetLastDockedLog(ctx context.Context, ShipID int) (*dto.ShipDockedLog, error) {
+	tx := r.Db.Begin()
+
+	var log model.ShipDockedLog
+	err := tx.Where("ship_id = ?", ShipID).Order("created_at DESC").First(&log).Error
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	logDock := dto.ShipDockedLog{
+		ID:        log.ID,
+		Long:      log.Long,
+		Lat:       log.Lat,
+		Status:    string(log.Status),
+		CreatedAt: log.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return &logDock, nil
+}
+
+func (r *ship) StoreDockedLog(ctx context.Context, request dto.ShipDockedLogStore) error {
+	tx := r.Db.Begin()
+
+	dockedModel := model.ShipDockedLog{
+		ShipID: request.ShipID,
+		Long:   request.Long,
+		Lat:    request.Lat,
+		Status: model.ShipStatus(request.Status),
+	}
+
+	if err := tx.Create(&dockedModel).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
+func (r *ship) StoreLocationLog(ctx context.Context, request dto.ShipLocationLogStore) error {
+	tx := r.Db.Begin()
+
+	locationModel := model.ShipLocationLog{
+		ShipID:   request.ShipID,
+		Long:     request.Long,
+		Lat:      request.Lat,
+		OnGround: request.OnGround,
+		IsMocked: request.IsMocked,
+	}
+
+	if err := tx.Create(&locationModel).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
+func (r *ship) UpdateShip(ctx context.Context, request model.Ship) error {
+	tx := r.Db.Begin()
+
+	updateFields := map[string]interface{}{
+		"status":       model.ShipStatus(request.Status),
+		"current_lat":  request.CurrentLat,
+		"current_long": request.CurrentLong,
+		"on_ground": func() int {
+			if request.OnGround == 1 {
+				return 1
+			}
+			return 0
+		}(),
+	}
+
+	if err := tx.Model(&model.Ship{}).Where("id = ?", request.ID).Updates(updateFields).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
 }

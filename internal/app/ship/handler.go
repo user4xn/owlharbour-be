@@ -169,3 +169,31 @@ func (h *handler) ShipByDevice(c *gin.Context) {
 	response := util.APIResponse("Successfully retrieved ship data", http.StatusOK, "success", shipDetail)
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *handler) RecordLog(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var request dto.ShipRecordRequest
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		errorMessage := gin.H{"errors": "please fill data"}
+		if err != io.EOF {
+			errors := util.FormatValidationError(err)
+			errorMessage = gin.H{"errors": errors}
+		}
+
+		response := util.APIResponse("Invalid request payload", http.StatusBadRequest, "failed", errorMessage)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	service := h.service.RecordLocationShip(ctx, request)
+	if service != nil {
+		response := util.APIResponse(service.Error(), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Location successfully recorded", http.StatusOK, "success", service)
+	c.JSON(http.StatusOK, response)	
+}
