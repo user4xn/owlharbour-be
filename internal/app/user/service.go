@@ -38,9 +38,7 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 		return dto.ReturnJwt{}, constants.ErrorLoadLocationTime
 	}
 	user, err := s.UserRepository.FindOne(ctx, "id,email,name,password", "email = ?", payload.Email)
-	fmt.Println(user)
 	if err != nil {
-
 		return dto.ReturnJwt{}, constants.UserNotFound
 	}
 
@@ -53,12 +51,10 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 
 	jwt, err := generateToken(secretKey, strconv.Itoa(user.ID), user.Email)
 	if err != nil {
-		fmt.Println("kodok 2")
 		return dto.ReturnJwt{}, constants.ErrorGenerateJwt
 	}
 
 	if jwt == "" {
-		fmt.Println("kodok 3")
 		return dto.ReturnJwt{}, constants.EmptyGenerateJwt
 	}
 
