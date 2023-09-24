@@ -5,6 +5,7 @@ import (
 	"log"
 	"simpel-api/database"
 	"simpel-api/database/migration"
+	"simpel-api/database/seeder"
 	"simpel-api/internal/factory"
 	"simpel-api/internal/http"
 	"simpel-api/pkg/util"
@@ -29,13 +30,17 @@ func main() {
 		&s,
 		"s",
 		"none",
-		`This flag is used for migration`,
+		`This flag is used for seeder`,
 	)
 
 	flag.Parse()
 
 	if m == "migrate" {
 		migration.Migrate()
+	}
+
+	if s == "seeder" {
+		seeder.Seed()
 	}
 
 	f := factory.NewFactory() // Database instance initialization

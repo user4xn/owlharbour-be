@@ -49,7 +49,7 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 	}
 	secretKey := []byte(util.GetEnv("SECRET_KEY", "fallback"))
 
-	jwt, err := generateToken(secretKey, strconv.Itoa(user.ID), user.Email)
+	jwt, err := GenerateToken(secretKey, strconv.Itoa(user.ID), user.Email)
 	if err != nil {
 		return dto.ReturnJwt{}, constants.ErrorGenerateJwt
 	}
@@ -96,7 +96,7 @@ func ComparePasswords(hashedPassword, inputPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(inputPassword))
 }
 
-func generateToken(secretKey []byte, userID string, email string) (string, error) {
+func GenerateToken(secretKey []byte, userID string, email string) (string, error) {
 	loc, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
 		return "", err
