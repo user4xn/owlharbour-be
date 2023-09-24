@@ -1,10 +1,12 @@
 package user
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"simpel-api/internal/dto"
 	"simpel-api/internal/factory"
+	"simpel-api/pkg/constants"
 	"simpel-api/pkg/util"
 
 	"github.com/gin-contrib/sessions"
@@ -35,8 +37,32 @@ func (h *handler) Login(g *gin.Context) {
 	}
 
 	data, err := h.service.LoginService(g, payload)
-	if err != nil {
-		response := util.APIResponse("Failed Email Or Password", http.StatusBadRequest, "failed", nil)
+	if err == constants.UserNotFound {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.UserNotFound), http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	if err == constants.InvalidPassword {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.InvalidPassword), http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	if err == constants.ErrorLoadLocationTime {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorLoadLocationTime), http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	if err == constants.ErrorGenerateJwt {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorGenerateJwt), http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	if err == constants.EmptyGenerateJwt {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.EmptyGenerateJwt), http.StatusBadRequest, "failed", nil)
 		g.JSON(http.StatusUnprocessableEntity, response)
 		return
 	}
