@@ -12,5 +12,5 @@ func (h *handler) Router(g *gin.RouterGroup) {
 	g.GET("/get-profile", h.GetProfile)
 	g.GET("/list", h.GetAllUsers)
 	g.POST("/store", h.StoreUser)
-	g.POST("/logout", h.logoutHandler)
+	g.POST("/logout", h.LogoutHandler)
 }

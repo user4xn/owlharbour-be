@@ -127,7 +127,7 @@ func (h *handler) StoreUser(g *gin.Context) {
 	return
 }
 
-func (h *handler) logoutHandler(g *gin.Context) {
+func (h *handler) LogoutHandler(g *gin.Context) {
 	session := sessions.Default(g)
 	tokenString := session.Get("token")
 	if tokenString != nil {
