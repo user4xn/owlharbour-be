@@ -26,7 +26,7 @@ func NewPairingRequestRepository(db *gorm.DB) PairingRequest {
 }
 
 func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.PairingRequest) error {
-	tx := r.Db.Begin()
+	tx := r.Db.WithContext(ctx).Begin()
 
 	existingDevice := model.PairingRequest{}
 	if err := tx.Where("device_id = ?", request.DeviceID).Order("created_at DESC").First(&existingDevice).Error; err == nil {
@@ -62,7 +62,7 @@ func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.P
 }
 
 func (r *pairingRequest) PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error) {
-	tx := r.Db.Begin()
+	tx := r.Db.WithContext(ctx).Begin()
 
 	query := tx.Model(&model.PairingRequest{})
 
@@ -106,7 +106,7 @@ func (r *pairingRequest) PairingRequestList(ctx context.Context, request dto.Pai
 }
 
 func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, request dto.PairingActionRequest) (*dto.PairingRequestResponse, error) {
-	tx := r.Db.Begin()
+	tx := r.Db.WithContext(ctx).Begin()
 
 	var pairing model.PairingRequest
 	err := tx.First(&pairing, request.PairingID).Error

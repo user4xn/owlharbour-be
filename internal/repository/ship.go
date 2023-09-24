@@ -38,7 +38,7 @@ func (r *ship) StoreNewShip(ctx context.Context, request dto.PairingRequestRespo
 		Status:          "out of scope",
 	}
 
-	tx := r.Db.Begin()
+	tx := r.Db.WithContext(ctx).Begin()
 
 	if err := tx.Create(&shipModel).Error; err != nil {
 		tx.Rollback()
@@ -54,7 +54,7 @@ func (r *ship) StoreNewShip(ctx context.Context, request dto.PairingRequestRespo
 }
 
 func (r *ship) ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error) {
-	tx := r.Db.Begin()
+	tx := r.Db.WithContext(ctx).Begin()
 
 	query := tx.Model(&model.Ship{})
 
@@ -97,7 +97,7 @@ func (r *ship) ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.S
 }
 
 func (r *ship) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipDetailResponse, error) {
-	tx := r.Db.Begin()
+	tx := r.Db.WithContext(ctx).Begin()
 
 	var ship model.Ship
 	err := tx.Where("device_id = ?", DeviceID).First(&ship).Error
@@ -128,7 +128,7 @@ func (r *ship) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipDeta
 }
 
 func (r *ship) GetLastDockedLog(ctx context.Context, ShipID int) (*dto.ShipDockedLog, error) {
-	tx := r.Db.Begin()
+	tx := r.Db.WithContext(ctx).Begin()
 
 	var log model.ShipDockedLog
 	err := tx.Where("ship_id = ?", ShipID).Order("created_at DESC").First(&log).Error
@@ -154,7 +154,7 @@ func (r *ship) GetLastDockedLog(ctx context.Context, ShipID int) (*dto.ShipDocke
 }
 
 func (r *ship) StoreDockedLog(ctx context.Context, request dto.ShipDockedLogStore) error {
-	tx := r.Db.Begin()
+	tx := r.Db.WithContext(ctx).Begin()
 
 	dockedModel := model.ShipDockedLog{
 		ShipID: request.ShipID,
@@ -177,7 +177,7 @@ func (r *ship) StoreDockedLog(ctx context.Context, request dto.ShipDockedLogStor
 }
 
 func (r *ship) StoreLocationLog(ctx context.Context, request dto.ShipLocationLogStore) error {
-	tx := r.Db.Begin()
+	tx := r.Db.WithContext(ctx).Begin()
 
 	locationModel := model.ShipLocationLog{
 		ShipID:   request.ShipID,
@@ -201,7 +201,7 @@ func (r *ship) StoreLocationLog(ctx context.Context, request dto.ShipLocationLog
 }
 
 func (r *ship) UpdateShip(ctx context.Context, request model.Ship) error {
-	tx := r.Db.Begin()
+	tx := r.Db.WithContext(ctx).Begin()
 
 	updateFields := map[string]interface{}{
 		"status":       model.ShipStatus(request.Status),
