@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"simpel-api/internal/dto"
 	"simpel-api/internal/model"
 	"simpel-api/pkg/util"
 
@@ -10,6 +12,7 @@ import (
 
 type UserInterface interface {
 	Init() *gorm.DB
+	GetAll(ctx context.Context, selectedFields string, searchQuery string, args ...interface{}) ([]dto.AllUser, error)
 	Find(ctx context.Context, queries []string, argsSlice ...[]interface{}) (model.User, error)
 	Store(ctx context.Context, data model.User) (int, error)
 	FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.User, error)
@@ -27,6 +30,35 @@ func NewUserRepository(db *gorm.DB) *User {
 
 func (u *User) Init() *gorm.DB {
 	return u.Database
+}
+func (u *User) GetAll(ctx context.Context, selectedFields string, searchQuery string, args ...interface{}) ([]dto.AllUser, error) {
+	var res []model.User
+
+	db := u.Database.WithContext(ctx).Model(&model.User{})
+	db = util.SetSelectFields(db, selectedFields)
+
+	if err := db.Where(searchQuery, args...).Find(&res).Error; err != nil {
+		return nil, err
+	}
+
+	var AllUser []dto.AllUser
+	for _, user := range res {
+		tCreatedAt := user.CreatedAt
+		tUpdatedAt := user.UpdatedAt
+		formatCreatedAt := tCreatedAt.Format("2006-01-02 15:04:05")
+		formatUpdatedAt := tUpdatedAt.Format("2006-01-02 15:04:05")
+		userDTO := dto.AllUser{
+			ID:        user.ID,
+			Name:      user.Name,
+			Email:     user.Email,
+			Role:      fmt.Sprintf("%s", user.Role),
+			CreatedAt: formatCreatedAt,
+			UpdatedAt: formatUpdatedAt,
+		}
+		AllUser = append(AllUser, userDTO)
+	}
+
+	return AllUser, nil
 }
 
 func (u *User) Store(ctx context.Context, data model.User) (int, error) {

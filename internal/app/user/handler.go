@@ -86,6 +86,15 @@ func (h *handler) GetProfile(g *gin.Context) {
 
 }
 
+func (h *handler) GetAllUsers(g *gin.Context) {
+	search := g.PostForm("search")
+	data := h.service.GetAllUsers(g, search)
+	response := util.APIResponse("Success Get List Users", http.StatusOK, "success", data)
+	g.JSON(http.StatusOK, response)
+	return
+
+}
+
 func (h *handler) logoutHandler(g *gin.Context) {
 	session := sessions.Default(g)
 	tokenString := session.Get("token")

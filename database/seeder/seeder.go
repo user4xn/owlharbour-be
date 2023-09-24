@@ -1,8 +1,10 @@
 package seeder
 
 import (
+	"fmt"
 	"simpel-api/database"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -18,20 +20,24 @@ func Seed() {
 
 	db := database.GetConnection()
 
-	password := "mysecretpassword" // Note: In real-world scenarios, you should use a library to securely hash passwords.
+	password := []byte("mysecretpassword")
+	hashedPasswordSA, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	seedData := []User{
 		{
 			Name:     "Super Admin",
 			Email:    "superadmin@gmail.com",
 			Role:     "superadmin",
-			Password: password,
+			Password: string(hashedPasswordSA),
 		},
 		{
 			Name:     "Admin",
 			Email:    "admin@gmail.com",
 			Role:     "admin",
-			Password: password,
+			Password: string(hashedPasswordSA),
 		},
 	}
 

@@ -23,6 +23,7 @@ type service struct {
 type Service interface {
 	LoginService(ctx context.Context, payload dto.PayloadLogin) (dto.ReturnJwt, error)
 	GetProfile(ctx context.Context, userSess any) dto.ProfileUser
+	GetAllUsers(ctx context.Context, Search string) []dto.AllUser
 }
 
 func NewService(f *factory.Factory) Service {
@@ -82,8 +83,32 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 	}, nil
 }
 
+func (s *service) GetAllUsers(ctx context.Context, Search string) []dto.AllUser {
+	var AllUser []dto.AllUser
+	selectedFields := "id, name, email, role, created_at, updated_at"
+	searchQuery := "Name Like ?"
+	args := []interface{}{"%" + Search + "%"}
+	users, err := s.UserRepository.GetAll(ctx, selectedFields, searchQuery, args...)
+	if err != nil {
+		return AllUser
+	}
+
+	for _, user := range users {
+		user := dto.AllUser{
+			ID:        user.ID,
+			Name:      user.Name,
+			Email:     user.Email,
+			Role:      user.Role,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		}
+		AllUser = append(AllUser, user)
+	}
+
+	return AllUser
+}
+
 func (s *service) GetProfile(ctx context.Context, userSess any) dto.ProfileUser {
-	fmt.Println(userSess)
 	return dto.ProfileUser{
 		ID:    userSess.(model.User).ID,
 		Name:  userSess.(model.User).Name,
