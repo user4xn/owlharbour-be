@@ -9,6 +9,7 @@ type Factory struct {
 	AppRepository            repository.App
 	ShipRepository           repository.Ship
 	PairingRequestRepository repository.PairingRequest
+	UserRepository           repository.UserInterface
 }
 
 func NewFactory() *Factory {
@@ -19,6 +20,7 @@ func NewFactory() *Factory {
 		AppRepository:            repository.NewAppRepository(db),
 		ShipRepository:           repository.NewShipRepository(db),
 		PairingRequestRepository: repository.NewPairingRequestRepository(db),
+		UserRepository:           repository.NewUserRepository(db),
 		// Assign the appropriate implementation of the ReturInsightRepository
 	}
 }

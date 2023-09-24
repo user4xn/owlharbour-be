@@ -11,6 +11,8 @@ import (
 	"time"
 
 	ratelimit "github.com/JGLTechnologies/gin-rate-limit"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,6 +26,10 @@ func errorHandler(c *gin.Context, info ratelimit.Info) {
 
 // Here we define route function for user Handlers that accepts gin.Engine and factory parameters
 func NewHttp(g *gin.Engine, f *factory.Factory) {
+
+	store := cookie.NewStore([]byte("secret"))
+	g.Use(sessions.Sessions("mysession", store))
+
 	Index(g)
 	// Here we use logger middleware before the actual API to catch any api call from clients
 	g.Use(gin.Logger())
@@ -32,11 +38,11 @@ func NewHttp(g *gin.Engine, f *factory.Factory) {
 
 	g.Use(middleware.CORSMiddleware())
 
-	store := ratelimit.InMemoryStore(&ratelimit.InMemoryOptions{
+	rate := ratelimit.InMemoryStore(&ratelimit.InMemoryOptions{
 		Rate:  time.Minute,
 		Limit: 100,
 	})
-	limiter := ratelimit.RateLimiter(store, &ratelimit.Options{
+	limiter := ratelimit.RateLimiter(rate, &ratelimit.Options{
 		ErrorHandler: errorHandler,
 		KeyFunc:      keyFunc,
 	})
