@@ -1,3 +1,8 @@
+
+# Project Title
+
+A brief description of what this project does and who it's for
+
 ### Command for running this program:
 
 Copy file .env.example to .env and edit:
@@ -14,8 +19,21 @@ go build -v .
 This command for run migrate database:
 
 ```shell
-./simpel-api -m=migrate
+./simpel-api -m="migrate"
 ```
+This command for run seed database:
+
+```shell
+./simpel-api -s="seeder"
+```
+
+Default seed credentials :
+
+superadmin@gmail.com :
+superadminpassword
+
+admin@gmail.com :
+adminpassword
 
 This command for run api :
 
