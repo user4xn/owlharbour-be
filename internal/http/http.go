@@ -8,9 +8,19 @@ import (
 	User "simpel-api/internal/app/user"
 	"simpel-api/internal/factory"
 	"simpel-api/internal/middleware"
+	"time"
 
+	ratelimit "github.com/JGLTechnologies/gin-rate-limit"
 	"github.com/gin-gonic/gin"
 )
+
+func keyFunc(c *gin.Context) string {
+	return c.ClientIP()
+}
+
+func errorHandler(c *gin.Context, info ratelimit.Info) {
+	c.String(429, "Too many requests. Try again in "+time.Until(info.ResetTime).String())
+}
 
 // Here we define route function for user Handlers that accepts gin.Engine and factory parameters
 func NewHttp(g *gin.Engine, f *factory.Factory) {
@@ -22,8 +32,19 @@ func NewHttp(g *gin.Engine, f *factory.Factory) {
 
 	g.Use(middleware.CORSMiddleware())
 
+	store := ratelimit.InMemoryStore(&ratelimit.InMemoryOptions{
+		Rate:  time.Minute,
+		Limit: 100,
+	})
+	limiter := ratelimit.RateLimiter(store, &ratelimit.Options{
+		ErrorHandler: errorHandler,
+		KeyFunc:      keyFunc,
+	})
+
 	// Here we define a router group
 	v1 := g.Group("/api/v1")
+
+	v1.Use(limiter)
 
 	Dashboard.NewHandler(f).Router(v1.Group("/dashboard"))
 	Report.NewHandler(f).Router(v1.Group("/report"))
