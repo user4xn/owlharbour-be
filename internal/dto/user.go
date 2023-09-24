@@ -13,6 +13,13 @@ type (
 		Password string `json:"password" binding:"required"`
 	}
 
+	PayloadStoreUser struct {
+		Name     string `json:"name" binding:"required"`
+		Email    string `json:"email" binding:"required"`
+		Password string `json:"password" binding:"required"`
+		Role     string `json:"role" binding:"required"`
+	}
+
 	ReturnJwt struct {
 		TokenJwt  string         `json:"token_jwt"`
 		ExpiredAt string         `json:"expired_at"`

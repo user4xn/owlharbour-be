@@ -95,6 +95,21 @@ func (h *handler) GetAllUsers(g *gin.Context) {
 
 }
 
+func (h *handler) StoreUser(g *gin.Context) {
+	var payload dto.PayloadStoreUser
+	if err := g.ShouldBind(&payload); err != nil {
+		errorMessage := gin.H{"errors": "please fill data"}
+		if err != io.EOF {
+			errors := util.FormatValidationError(err)
+			errorMessage = gin.H{"errors": errors}
+		}
+		response := util.APIResponse("Error Validation", http.StatusUnprocessableEntity, "failed", errorMessage)
+		g.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+}
+
 func (h *handler) logoutHandler(g *gin.Context) {
 	session := sessions.Default(g)
 	tokenString := session.Get("token")
