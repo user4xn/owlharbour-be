@@ -11,18 +11,24 @@ import (
 	"strconv"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
-func BearerToken() gin.HandlerFunc {
+func Authenticate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header["Authorization"]
 		if len(header) == 0 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, dto.Common{
-				Status:  "failed",
-				Code:    401,
-				Message: "Unauthenticated",
-			})
+			response := util.APIResponse("Sorry, you didn't enter a bearer token", http.StatusUnauthorized, "failed", nil)
+			c.JSON(http.StatusUnauthorized, response)
+			return
+		}
+		session := sessions.Default(c)
+		tokenString := session.Get("token")
+
+		if tokenString == nil {
+			response := util.APIResponse("Token is missing", http.StatusUnauthorized, "failed", nil)
+			c.JSON(http.StatusUnauthorized, response)
 			return
 		}
 

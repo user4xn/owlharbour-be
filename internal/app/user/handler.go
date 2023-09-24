@@ -7,6 +7,7 @@ import (
 	"simpel-api/internal/factory"
 	"simpel-api/pkg/util"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -39,10 +40,15 @@ func (h *handler) Login(g *gin.Context) {
 		g.JSON(http.StatusUnprocessableEntity, response)
 		return
 	}
+
+	session := sessions.Default(g)
+	session.Set("user_id", data.DataUser.ID)
+	session.Set("token", data.TokenJwt)
+	session.Save()
+
 	response := util.APIResponse("Success Login", http.StatusOK, "success", data)
 	g.JSON(http.StatusOK, response)
 	return
-
 }
 
 func (h *handler) GetProfile(g *gin.Context) {
@@ -51,5 +57,18 @@ func (h *handler) GetProfile(g *gin.Context) {
 	response := util.APIResponse("Success Get Profile", http.StatusOK, "success", data)
 	g.JSON(http.StatusOK, response)
 	return
+
+}
+
+func (h *handler) logoutHandler(g *gin.Context) {
+	session := sessions.Default(g)
+	tokenString := session.Get("token")
+	if tokenString != nil {
+		session.Clear()
+		session.Save()
+		response := util.APIResponse("Success Logout", http.StatusOK, "success", nil)
+		g.JSON(http.StatusOK, response)
+		return
+	}
 
 }

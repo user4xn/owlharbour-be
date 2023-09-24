@@ -2,19 +2,18 @@ package user
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"simpel-api/internal/dto"
 	"simpel-api/internal/factory"
 	"simpel-api/internal/model"
 	"simpel-api/internal/repository"
+	"simpel-api/pkg/constants"
 	"simpel-api/pkg/util"
 	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type service struct {
@@ -33,28 +32,34 @@ func NewService(f *factory.Factory) Service {
 }
 
 func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (dto.ReturnJwt, error) {
+
 	loc, err := time.LoadLocation("Asia/Jakarta")
-	user, err := s.UserRepository.FindOne(ctx, "id,email,name,password", "email = ?", payload.Email)
-	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) == false {
-		fmt.Println(err)
-		return dto.ReturnJwt{}, err
+	if err != nil {
+		return dto.ReturnJwt{}, constants.ErrorLoadLocationTime
 	}
+	user, err := s.UserRepository.FindOne(ctx, "id,email,name,password", "email = ?", payload.Email)
+	fmt.Println(user)
+	if err != nil {
+
+		return dto.ReturnJwt{}, constants.UserNotFound
+	}
+
 	err = ComparePasswords(user.Password, payload.Password)
 	if err != nil {
 		fmt.Println(err)
-		return dto.ReturnJwt{}, err
+		return dto.ReturnJwt{}, constants.InvalidPassword
 	}
 	secretKey := []byte(util.GetEnv("SECRET_KEY", "fallback"))
 
 	jwt, err := generateToken(secretKey, strconv.Itoa(user.ID), user.Email)
 	if err != nil {
-		fmt.Println(err)
-		return dto.ReturnJwt{}, err
+		fmt.Println("kodok 2")
+		return dto.ReturnJwt{}, constants.ErrorGenerateJwt
 	}
 
 	if jwt == "" {
-		fmt.Println(err)
-		return dto.ReturnJwt{}, err
+		fmt.Println("kodok 3")
+		return dto.ReturnJwt{}, constants.EmptyGenerateJwt
 	}
 
 	dataUser := dto.DataUserLogin{
@@ -63,7 +68,9 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 		Name:  user.Name,
 	}
 	jwtMode := util.GetEnv("JWT_MODE", "fallback")
-	if jwtMode == "realse" {
+	expiredTime := time.Now().In(loc).Add(time.Hour * 730)
+	formatExpiredTime := expiredTime.Format("2006-01-02 15:04:05")
+	if jwtMode == "release" {
 		expiredTime := time.Now().In(loc).Add(time.Hour * 2191)
 		formatExpiredTime := expiredTime.Format("2006-01-02 15:04:05")
 		return dto.ReturnJwt{
@@ -72,8 +79,6 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 			DataUser:  &dataUser,
 		}, nil
 	}
-	expiredTime := time.Now().In(loc).Add(time.Hour * 730)
-	formatExpiredTime := expiredTime.Format("2006-01-02 15:04:05")
 	return dto.ReturnJwt{
 		TokenJwt:  jwt,
 		ExpiredAt: formatExpiredTime,
@@ -96,17 +101,40 @@ func ComparePasswords(hashedPassword, inputPassword string) error {
 }
 
 func generateToken(secretKey []byte, userID string, email string) (string, error) {
-	token := jwt.New(jwt.SigningMethodHS256)
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		return "", err
+	}
+	jwtMode := util.GetEnv("JWT_MODE", "fallback")
+	expiredTime := time.Now().In(loc).Add(time.Hour * 730).Unix()
+	if jwtMode == "release" {
+		expiredTime := time.Now().In(loc).Add(time.Hour * 2191).Unix()
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"user_id": userID,
+			"email":   email,
+			"exp":     expiredTime,
+		})
+		if err != nil {
+			return "", err
+		}
+		tokenString, err := token.SignedString(secretKey)
+		if err != nil {
+			return "", err
+		}
 
-	claims := token.Claims.(jwt.MapClaims)
-	claims["user_id"] = userID
-	claims["email"] = email
-	claims["exp"] = time.Now().Add(time.Hour * 1).Unix()
+		return tokenString, nil
+	}
 
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": userID,
+		"email":   email,
+		"exp":     expiredTime,
+	})
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
 		return "", err
 	}
 
 	return tokenString, nil
+
 }

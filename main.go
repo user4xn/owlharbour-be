@@ -38,10 +38,6 @@ func main() {
 		migration.Migrate()
 	}
 
-	if s == "seeder" {
-
-	}
-
 	f := factory.NewFactory() // Database instance initialization
 	g := gin.New()
 
