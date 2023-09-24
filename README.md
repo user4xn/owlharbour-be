@@ -25,7 +25,7 @@ This command for run api :
 
 ### RUN WITH DOCKER
 
-This command build and run container `api` komship service
+This command build and run container `api` simpel service
 
 ```shell
 // build process

@@ -1,6 +1,8 @@
 package ship
 
 import (
+	"simpel-api/internal/middleware"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -9,7 +11,8 @@ func (h *handler) Router(g *gin.RouterGroup) {
 	// g.Use(middleware.FucntionName())
 	g.POST("/pairing", h.PairingShip)
 	g.POST("/record-log", h.RecordLog)
-	
+
+	g.Use(middleware.Authenticate())
 	g.GET("/pairing-request", h.PairingRequestList)
 	g.PUT("/pairing/action", h.PairingAction)
 
