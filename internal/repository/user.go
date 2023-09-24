@@ -14,7 +14,7 @@ type UserInterface interface {
 	Init() *gorm.DB
 	GetAll(ctx context.Context, selectedFields string, searchQuery string, args ...interface{}) ([]dto.AllUser, error)
 	Find(ctx context.Context, queries []string, argsSlice ...[]interface{}) (model.User, error)
-	Store(ctx context.Context, data model.User) (int, error)
+	Store(ctx context.Context, data model.User) error
 	FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.User, error)
 }
 
@@ -61,13 +61,12 @@ func (u *User) GetAll(ctx context.Context, selectedFields string, searchQuery st
 	return AllUser, nil
 }
 
-func (u *User) Store(ctx context.Context, data model.User) (int, error) {
+func (u *User) Store(ctx context.Context, data model.User) error {
 	tx := u.Database.WithContext(ctx)
 	if err := tx.Model(model.User{}).Create(&data).Error; err != nil {
-		return 0, err
+		return err
 	}
-
-	return data.ID, nil
+	return nil
 }
 
 func (u *User) FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.User, error) {

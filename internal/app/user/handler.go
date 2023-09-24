@@ -39,31 +39,31 @@ func (h *handler) Login(g *gin.Context) {
 	data, err := h.service.LoginService(g, payload)
 	if err == constants.UserNotFound {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.UserNotFound), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusUnprocessableEntity, response)
+		g.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.InvalidPassword {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.InvalidPassword), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusUnprocessableEntity, response)
+		g.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.ErrorLoadLocationTime {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorLoadLocationTime), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusUnprocessableEntity, response)
+		g.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.ErrorGenerateJwt {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorGenerateJwt), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusUnprocessableEntity, response)
+		g.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.EmptyGenerateJwt {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.EmptyGenerateJwt), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusUnprocessableEntity, response)
+		g.JSON(http.StatusBadRequest, response)
 		return
 	}
 
@@ -108,6 +108,23 @@ func (h *handler) StoreUser(g *gin.Context) {
 		return
 	}
 
+	err := h.service.StoreUser(g, payload)
+
+	if err == constants.DuplicateStoreUser {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.DuplicateStoreUser), http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err == constants.ErrorHashPassword {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorHashPassword), http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Success Store User", http.StatusOK, "success", nil)
+	g.JSON(http.StatusOK, response)
+	return
 }
 
 func (h *handler) logoutHandler(g *gin.Context) {

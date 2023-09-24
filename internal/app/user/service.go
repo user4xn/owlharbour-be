@@ -24,6 +24,7 @@ type Service interface {
 	LoginService(ctx context.Context, payload dto.PayloadLogin) (dto.ReturnJwt, error)
 	GetProfile(ctx context.Context, userSess any) dto.ProfileUser
 	GetAllUsers(ctx context.Context, Search string) []dto.AllUser
+	StoreUser(ctx context.Context, payload dto.PayloadStoreUser) error
 }
 
 func NewService(f *factory.Factory) Service {
@@ -115,6 +116,32 @@ func (s *service) GetProfile(ctx context.Context, userSess any) dto.ProfileUser 
 		Email: userSess.(model.User).Email,
 		Role:  fmt.Sprintf("%s", userSess.(model.User).Role),
 	}
+}
+
+func (s *service) StoreUser(ctx context.Context, payload dto.PayloadStoreUser) error {
+
+	_, err := s.UserRepository.FindOne(ctx, "id,email,name,password", "email = ?", payload.Email)
+
+	if err != nil {
+		password := []byte(payload.Password)
+		hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+		if err != nil {
+			return constants.ErrorHashPassword
+		}
+
+		dataStore := model.User{
+			Name:     payload.Name,
+			Email:    payload.Email,
+			Password: string(hashedPassword),
+			Role:     model.RoleType(payload.Role),
+		}
+		s.UserRepository.Store(ctx, dataStore)
+
+		return nil
+	}
+
+	return constants.DuplicateStoreUser
+
 }
 
 func ComparePasswords(hashedPassword, inputPassword string) error {

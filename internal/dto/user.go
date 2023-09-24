@@ -1,5 +1,7 @@
 package dto
 
+import "time"
+
 type RoleType string
 
 const (
@@ -14,10 +16,12 @@ type (
 	}
 
 	PayloadStoreUser struct {
-		Name     string `json:"name" binding:"required"`
-		Email    string `json:"email" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		Role     string `json:"role" binding:"required"`
+		Name      string    `json:"name" binding:"required"`
+		Email     string    `json:"email" binding:"required"`
+		Password  string    `json:"password" binding:"required"`
+		Role      string    `json:"role" binding:"required"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
 	}
 
 	ReturnJwt struct {
