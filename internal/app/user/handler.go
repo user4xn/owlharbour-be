@@ -8,6 +8,7 @@ import (
 	"simpel-api/internal/factory"
 	"simpel-api/pkg/constants"
 	"simpel-api/pkg/util"
+	"strconv"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -88,11 +89,27 @@ func (h *handler) GetProfile(g *gin.Context) {
 
 func (h *handler) GetAllUsers(g *gin.Context) {
 	search := g.PostForm("search")
-	data := h.service.GetAllUsers(g, search)
+	strLimit := g.PostForm("limit")
+	strOffset := g.PostForm("offset")
+
+	limit, err := strconv.Atoi(strLimit)
+	if err != nil {
+		response := util.APIResponse("Failed Get List Users", http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	offset, err := strconv.Atoi(strOffset)
+	if err != nil {
+		response := util.APIResponse("Failed Get List Users", http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	data := h.service.GetAllUsers(g, search, limit, offset)
+
 	response := util.APIResponse("Success Get List Users", http.StatusOK, "success", data)
 	g.JSON(http.StatusOK, response)
-	return
-
 }
 
 func (h *handler) StoreUser(g *gin.Context) {

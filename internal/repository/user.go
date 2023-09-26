@@ -12,7 +12,7 @@ import (
 
 type UserInterface interface {
 	Init() *gorm.DB
-	GetAll(ctx context.Context, selectedFields string, searchQuery string, args ...interface{}) ([]dto.AllUser, error)
+	GetAll(ctx context.Context, selectedFields string, searchQuery string, limit, offset int, args ...interface{}) ([]dto.AllUser, error)
 	Find(ctx context.Context, queries []string, argsSlice ...[]interface{}) (model.User, error)
 	Store(ctx context.Context, data model.User) error
 	FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.User, error)
@@ -31,13 +31,13 @@ func NewUserRepository(db *gorm.DB) *User {
 func (u *User) Init() *gorm.DB {
 	return u.Database
 }
-func (u *User) GetAll(ctx context.Context, selectedFields string, searchQuery string, args ...interface{}) ([]dto.AllUser, error) {
+func (u *User) GetAll(ctx context.Context, selectedFields string, searchQuery string, limit, offset int, args ...interface{}) ([]dto.AllUser, error) {
 	var res []model.User
 
 	db := u.Database.WithContext(ctx).Model(&model.User{})
 	db = util.SetSelectFields(db, selectedFields)
 
-	if err := db.Where(searchQuery, args...).Find(&res).Error; err != nil {
+	if err := db.Where(searchQuery, args...).Limit(limit).Offset(offset).Find(&res).Error; err != nil {
 		return nil, err
 	}
 

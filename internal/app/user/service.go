@@ -23,7 +23,7 @@ type service struct {
 type Service interface {
 	LoginService(ctx context.Context, payload dto.PayloadLogin) (dto.ReturnJwt, error)
 	GetProfile(ctx context.Context, userSess any) dto.ProfileUser
-	GetAllUsers(ctx context.Context, Search string) []dto.AllUser
+	GetAllUsers(ctx context.Context, Search string, limit int, offset int) []dto.AllUser
 	StoreUser(ctx context.Context, payload dto.PayloadStoreUser) error
 }
 
@@ -84,12 +84,12 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 	}, nil
 }
 
-func (s *service) GetAllUsers(ctx context.Context, Search string) []dto.AllUser {
+func (s *service) GetAllUsers(ctx context.Context, Search string, limit int, offset int) []dto.AllUser {
 	var AllUser []dto.AllUser
 	selectedFields := "id, name, email, role, created_at, updated_at"
 	searchQuery := "Name Like ?"
 	args := []interface{}{"%" + Search + "%"}
-	users, err := s.UserRepository.GetAll(ctx, selectedFields, searchQuery, args...)
+	users, err := s.UserRepository.GetAll(ctx, selectedFields, searchQuery, limit, offset, args...)
 	if err != nil {
 		return AllUser
 	}
