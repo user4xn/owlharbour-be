@@ -24,6 +24,7 @@ type Service interface {
 	LoginService(ctx context.Context, payload dto.PayloadLogin) (dto.ReturnJwt, error)
 	GetProfile(ctx context.Context, userSess any) dto.ProfileUser
 	GetAllUsers(ctx context.Context, Search string, limit int, offset int) []dto.AllUser
+	DetailUser(ctx context.Context, userID int) (dto.DetailUser, error)
 	StoreUser(ctx context.Context, payload dto.PayloadStoreUser) error
 }
 
@@ -116,6 +117,27 @@ func (s *service) GetProfile(ctx context.Context, userSess any) dto.ProfileUser 
 		Email: userSess.(model.User).Email,
 		Role:  fmt.Sprintf("%s", userSess.(model.User).Role),
 	}
+}
+
+func (s *service) DetailUser(ctx context.Context, userID int) (dto.DetailUser, error) {
+	user, err := s.UserRepository.FindOne(ctx, "id,email,name,role,created_at,updated_at", "id = ?", userID)
+	if err != nil {
+		return dto.DetailUser{}, constants.NotFoundDataUser
+	}
+	tCreatedAt := user.CreatedAt
+	tUpdatedAt := user.UpdatedAt
+	formatCreatedAt := tCreatedAt.Format("2006-01-02 15:04:05")
+	formatUpdateddAt := tUpdatedAt.Format("2006-01-02 15:04:05")
+	data := dto.DetailUser{
+		ID:        userID,
+		Name:      user.Name,
+		Email:     user.Email,
+		Role:      fmt.Sprintf("%s", user.Role),
+		CreatedAt: formatCreatedAt,
+		UpdatedAt: formatUpdateddAt,
+	}
+
+	return data, nil
 }
 
 func (s *service) StoreUser(ctx context.Context, payload dto.PayloadStoreUser) error {

@@ -16,4 +16,6 @@ var (
 
 	DuplicateStoreUser = errors.New("Duplicate Store Data User")
 	ErrorHashPassword  = errors.New("Error Hash Password")
+
+	NotFoundDataUser = errors.New("Not Found Data User")
 )

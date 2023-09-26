@@ -43,6 +43,15 @@ type (
 		Role  string `json:"role"`
 	}
 
+	DetailUser struct {
+		ID        int    `json:"id"`
+		Email     string `json:"email"`
+		Name      string `json:"name"`
+		Role      string `json:"role"`
+		CreatedAt string `json:"created_at"`
+		UpdatedAt string `json:"updated_at"`
+	}
+
 	AllUser struct {
 		ID        int    `json:"id"`
 		Email     string `json:"email"`

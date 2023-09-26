@@ -91,20 +91,8 @@ func (h *handler) GetAllUsers(g *gin.Context) {
 	search := g.PostForm("search")
 	strLimit := g.PostForm("limit")
 	strOffset := g.PostForm("offset")
-
-	limit, err := strconv.Atoi(strLimit)
-	if err != nil {
-		response := util.APIResponse("Failed Get List Users", http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
-		return
-	}
-
-	offset, err := strconv.Atoi(strOffset)
-	if err != nil {
-		response := util.APIResponse("Failed Get List Users", http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
-		return
-	}
+	limit, _ := strconv.Atoi(strLimit)
+	offset, _ := strconv.Atoi(strOffset)
 
 	data := h.service.GetAllUsers(g, search, limit, offset)
 
@@ -154,5 +142,22 @@ func (h *handler) LogoutHandler(g *gin.Context) {
 		g.JSON(http.StatusOK, response)
 		return
 	}
+
+}
+
+func (h *handler) DetailUser(g *gin.Context) {
+	userID, _ := strconv.Atoi(g.Param("user_id"))
+
+	data, err := h.service.DetailUser(g, userID)
+
+	if err == constants.NotFoundDataUser {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.NotFoundDataUser), http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Success Get Detail User", http.StatusOK, "success", data)
+	g.JSON(http.StatusOK, response)
+	return
 
 }
