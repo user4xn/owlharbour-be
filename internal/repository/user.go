@@ -16,6 +16,7 @@ type UserInterface interface {
 	Find(ctx context.Context, queries []string, argsSlice ...[]interface{}) (model.User, error)
 	Store(ctx context.Context, data model.User) error
 	FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.User, error)
+	UpdateOne(ctx context.Context, updatedModels *dto.PayloadUpdateUser, updatedField string, query string, args ...interface{}) error
 }
 
 type User struct {
@@ -98,4 +99,13 @@ func (u *User) Find(ctx context.Context, queries []string, argsSlice ...[]interf
 	}
 
 	return res, nil
+}
+
+func (u *User) UpdateOne(ctx context.Context, updatedModels *dto.PayloadUpdateUser, updatedField string, query string, args ...interface{}) error {
+	fmt.Println(updatedModels)
+	modelDb := u.Database.WithContext(ctx).Model(&model.User{})
+	if err := util.SetSelectFields(modelDb, updatedField).Where(query, args...).Updates(updatedModels).Error; err != nil {
+		return err
+	}
+	return nil
 }

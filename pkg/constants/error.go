@@ -18,4 +18,5 @@ var (
 	ErrorHashPassword  = errors.New("Error Hash Password")
 
 	NotFoundDataUser = errors.New("Not Found Data User")
+	FailedUpdateUser = errors.New("Failed Update User")
 )

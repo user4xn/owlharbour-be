@@ -13,5 +13,6 @@ func (h *handler) Router(g *gin.RouterGroup) {
 	g.GET("/list", h.GetAllUsers)
 	g.GET("/detail/:user_id", h.DetailUser)
 	g.POST("/store", h.StoreUser)
+	g.PUT("/update", h.UpdateUser)
 	g.POST("/logout", h.LogoutHandler)
 }

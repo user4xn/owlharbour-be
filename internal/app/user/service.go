@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"log"
 	"simpel-api/internal/dto"
 	"simpel-api/internal/factory"
 	"simpel-api/internal/model"
@@ -26,6 +27,7 @@ type Service interface {
 	GetAllUsers(ctx context.Context, Search string, limit int, offset int) []dto.AllUser
 	DetailUser(ctx context.Context, userID int) (dto.DetailUser, error)
 	StoreUser(ctx context.Context, payload dto.PayloadStoreUser) error
+	UpdateUser(ctx context.Context, payload dto.PayloadUpdateUser) error
 }
 
 func NewService(f *factory.Factory) Service {
@@ -164,6 +166,47 @@ func (s *service) StoreUser(ctx context.Context, payload dto.PayloadStoreUser) e
 
 	return constants.DuplicateStoreUser
 
+}
+
+func (s *service) UpdateUser(ctx context.Context, payload dto.PayloadUpdateUser) error {
+	user, err := s.UserRepository.FindOne(ctx, "id", "id = ?", payload.ID)
+	if err != nil {
+		return constants.NotFoundDataUser
+	}
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		return constants.ErrorLoadLocationTime
+	}
+	updateUser := dto.PayloadUpdateUser{
+		Name:      payload.Name,
+		Email:     payload.Email,
+		Role:      payload.Role,
+		UpdatedAt: time.Now().In(loc),
+	}
+
+	if payload.Password != "" {
+		password := []byte(payload.Password)
+		hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+		if err != nil {
+			log.Println("Error hashing password:", err)
+			return constants.ErrorHashPassword
+		}
+		updateUser.Password = string(hashedPassword)
+		err = s.UserRepository.UpdateOne(ctx, &updateUser, "name,email,role,password,updated_at", "id = ?", user.ID)
+		if err != nil {
+			log.Println("Error updating user:", err)
+			return constants.FailedUpdateUser
+		}
+		return nil
+	}
+
+	err = s.UserRepository.UpdateOne(ctx, &updateUser, "name,email,role,updated_at", "id = ?", user.ID)
+	if err != nil {
+		log.Println("Error updating user:", err)
+		return constants.FailedUpdateUser
+	}
+
+	return nil
 }
 
 func ComparePasswords(hashedPassword, inputPassword string) error {
