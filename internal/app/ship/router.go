@@ -18,4 +18,6 @@ func (h *handler) Router(g *gin.RouterGroup) {
 
 	g.GET("/list", h.ShipList)
 	g.GET("/by-device/:device_id", h.ShipByDevice)
+	g.GET("/detail/:ship_id", h.ShipDetail)
+	g.PUT("/update-detail", h.UpdateShipDetail)
 }

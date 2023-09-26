@@ -11,6 +11,7 @@ var tables = []interface{}{
 	&model.AppGeofence{},
 	&model.PairingRequest{},
 	&model.Ship{},
+	&model.ShipDetail{},
 	&model.ShipLocationLog{},
 	&model.ShipDockedLog{},
 }

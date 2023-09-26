@@ -2,10 +2,15 @@ package repository
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"simpel-api/internal/dto"
 	"simpel-api/internal/model"
+	"simpel-api/pkg/helper"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -16,12 +21,16 @@ type PairingRequest interface {
 }
 
 type pairingRequest struct {
-	Db *gorm.DB
+	Db           *gorm.DB
+	RedisClient  *redis.Client
+	CacheEnabled bool
 }
 
-func NewPairingRequestRepository(db *gorm.DB) PairingRequest {
+func NewPairingRequestRepository(db *gorm.DB, redisClient *redis.Client) PairingRequest {
 	return &pairingRequest{
-		Db: db,
+		Db:           db,
+		RedisClient:  redisClient,
+		CacheEnabled: true,
 	}
 }
 
@@ -58,10 +67,37 @@ func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.P
 		return err
 	}
 
+	cacheKey := "pairing_list-"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (r *pairingRequest) PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error) {
+	paramJSON, err := json.Marshal(request)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, err
+	}
+
+	hash := sha1.Sum(paramJSON)
+	uniqueString := fmt.Sprintf("%x", hash)
+
+	cacheKey := "pairing_list-" + uniqueString
+
+	if r.CacheEnabled {
+		cachedData, err := r.RedisClient.Get(ctx, cacheKey).Result()
+		if err == nil {
+			var cachedInfo []dto.PairingRequestResponse
+			if err := json.Unmarshal([]byte(cachedData), &cachedInfo); err == nil {
+				return cachedInfo, nil
+			}
+		}
+	}
+
 	tx := r.Db.WithContext(ctx).Begin()
 
 	query := tx.Model(&model.PairingRequest{})
@@ -100,6 +136,15 @@ func (r *pairingRequest) PairingRequestList(ctx context.Context, request dto.Pai
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
 		return nil, err
+	}
+
+	if r.CacheEnabled {
+		jsonData, err := json.Marshal(pairingList)
+		if err == nil {
+			r.RedisClient.Set(ctx, cacheKey, jsonData, time.Hour)
+		} else {
+			fmt.Println("Error marshalling data for cache:", err)
+		}
 	}
 
 	return pairingList, nil
@@ -143,6 +188,12 @@ func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, request dto.P
 
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
+		return nil, err
+	}
+
+	cacheKey := "pairing_list-"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
 		return nil, err
 	}
 

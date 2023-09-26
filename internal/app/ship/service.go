@@ -24,9 +24,11 @@ type Service interface {
 	PairingShip(ctx context.Context, request dto.PairingRequest) error
 	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
 	PairingAction(ctx context.Context, request dto.PairingActionRequest) error
-	ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipDetailResponse, error)
+	ShipByDevice(ctx context.Context, DeviceID int) (*dto.ShipMobileDetailResponse, error)
 	ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error)
 	RecordLocationShip(ctx context.Context, request dto.ShipRecordRequest) error
+	UpdateShipDetail(ctx context.Context, request dto.ShipAddonDetailRequest) error
+	ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailResponse, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -131,10 +133,31 @@ func (s *service) ShipList(ctx context.Context, request dto.ShipListParam) ([]dt
 	return res, nil
 }
 
-func (s *service) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipDetailResponse, error) {
-	res, err := s.shipRepository.ShipByDevice(ctx, DeviceID)
+func (s *service) ShipByDevice(ctx context.Context, DeviceID int) (*dto.ShipMobileDetailResponse, error) {
+	appInfo, err := s.appRepository.AppInfo(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	ship, err := s.shipRepository.ShipByDevice(ctx, DeviceID)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &dto.ShipMobileDetailResponse{
+		ID:              ship.ID,
+		ShipName:        ship.ShipName,
+		ResponsibleName: ship.ResponsibleName,
+		DeviceID:        ship.DeviceID,
+		CurrentLong:     ship.CurrentLong,
+		CurrentLat:      ship.CurrentLat,
+		FirebaseToken:   ship.FirebaseToken,
+		Status:          string(ship.Status),
+		OnGround:        ship.OnGround,
+		CreatedAt:       ship.CreatedAt,
+		HitMode:         appInfo.Mode,
+		Range:           appInfo.Range,
+		Interval:        appInfo.Interval,
 	}
 
 	return res, nil
@@ -326,4 +349,53 @@ func convertPolygon(polygon [][]float64) [][2]float64 {
 		result[i] = [2]float64{coord[0], coord[1]}
 	}
 	return result
+}
+
+func (s *service) UpdateShipDetail(ctx context.Context, request dto.ShipAddonDetailRequest) error {
+	err := s.shipRepository.UpdateShipDetail(ctx, request)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailResponse, error) {
+	ship, err := s.shipRepository.ShipByID(ctx, ShipID)
+	if err != nil {
+		return nil, err
+	}
+
+	dockedLogs, err := s.shipRepository.ShipDockedLogs(ctx, ShipID)
+	if err != nil {
+		return nil, err
+	}
+
+	locationLogs, err := s.shipRepository.ShipLocationLogs(ctx, ShipID)
+	if err != nil {
+		return nil, err
+	}
+
+	addonDetail, err := s.shipRepository.ShipAddonDetail(ctx, ShipID)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &dto.ShipDetailResponse{
+		ID:              ship.ID,
+		ShipName:        ship.Name,
+		ResponsibleName: ship.ResponsibleName,
+		DeviceID:        ship.DeviceID,
+		DetailShip:      *addonDetail,
+		CurrentLong:     ship.CurrentLong,
+		CurrentLat:      ship.CurrentLat,
+		FirebaseToken:   ship.FirebaseToken,
+		Status:          string(ship.Status),
+		OnGround:        ship.OnGround,
+		CreatedAt:       ship.CreatedAt.Format("2006-01-02 15:04:05"),
+		DockLogs:        dockedLogs,
+		LocationLogs:    locationLogs,
+	}
+
+	return res, nil
 }

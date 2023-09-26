@@ -147,9 +147,16 @@ func (h *handler) ShipList(c *gin.Context) {
 
 func (h *handler) ShipByDevice(c *gin.Context) {
 	ctx := c.Request.Context()
-	deviceID := c.Param("device_id")
-	if deviceID == "" {
+	deviceIDStr := c.Param("device_id")
+	if deviceIDStr == "" {
 		response := util.APIResponse("Invalid device_id", http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	deviceID, err := strconv.Atoi(deviceIDStr)
+	if err != nil {
+		response := util.APIResponse("Invalid device_id format", http.StatusBadRequest, "failed", nil)
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
@@ -200,5 +207,70 @@ func (h *handler) RecordLog(c *gin.Context) {
 	}
 
 	response := util.APIResponse("Location successfully recorded", http.StatusOK, "success", service)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *handler) UpdateShipDetail(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var request dto.ShipAddonDetailRequest
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		errorMessage := gin.H{"errors": "please fill data"}
+		if err != io.EOF {
+			errors := util.FormatValidationError(err)
+			errorMessage = gin.H{"errors": errors}
+		}
+
+		response := util.APIResponse("Invalid request payload", http.StatusBadRequest, "failed", errorMessage)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	err := h.service.UpdateShipDetail(ctx, request)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			response := util.APIResponse("invalid ship id, no ship data", http.StatusBadRequest, "failed", nil)
+			c.JSON(http.StatusBadRequest, response)
+		} else {
+			response := util.APIResponse("Failed to update ship data", http.StatusInternalServerError, "failed", nil)
+			c.JSON(http.StatusInternalServerError, response)
+		}
+		return
+	}
+
+	response := util.APIResponse("Successfully updated ship data", http.StatusOK, "success", nil)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *handler) ShipDetail(c *gin.Context) {
+	ctx := c.Request.Context()
+	shipIDStr := c.Param("ship_id")
+	if shipIDStr == "" {
+		response := util.APIResponse("Invalid ship_id", http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	shipID, err := strconv.Atoi(shipIDStr)
+	if err != nil {
+		response := util.APIResponse("Invalid ship_id format", http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	shipDetail, err := h.service.ShipDetail(ctx, shipID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			response := util.APIResponse("invalid ship id, no ship data", http.StatusBadRequest, "failed", nil)
+			c.JSON(http.StatusBadRequest, response)
+		} else {
+			response := util.APIResponse("Failed to retrieve ship data", http.StatusInternalServerError, "failed", nil)
+			c.JSON(http.StatusInternalServerError, response)
+		}
+		return
+	}
+
+	response := util.APIResponse("Successfully retrieved ship data", http.StatusOK, "success", shipDetail)
 	c.JSON(http.StatusOK, response)
 }

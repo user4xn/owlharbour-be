@@ -32,6 +32,12 @@ type ShipStatus string
 type PairingStatus string
 type ModeType string
 type RoleType string
+type ShipType string
+
+const (
+	KapalAngkut    ShipType = "kapal angkut"
+	KapalTangkap   ShipType = "kapal tangkap"
+)
 
 const (
 	Checkin    ShipStatus = "checkin"
