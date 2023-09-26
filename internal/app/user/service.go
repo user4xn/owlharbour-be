@@ -18,13 +18,13 @@ import (
 )
 
 type service struct {
-	UserRepository repository.UserInterface
+	UserRepository repository.User
 }
 
 type Service interface {
 	LoginService(ctx context.Context, payload dto.PayloadLogin) (dto.ReturnJwt, error)
 	GetProfile(ctx context.Context, userSess any) dto.ProfileUser
-	GetAllUsers(ctx context.Context, Search string, limit int, offset int) []dto.AllUser
+	GetAllUsers(ctx context.Context, request dto.UserListParam) ([]dto.AllUser, error)
 	DetailUser(ctx context.Context, userID int) (dto.DetailUser, error)
 	StoreUser(ctx context.Context, payload dto.PayloadStoreUser) error
 	UpdateUser(ctx context.Context, payload dto.PayloadUpdateUser) error
@@ -38,12 +38,12 @@ func NewService(f *factory.Factory) Service {
 }
 
 func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (dto.ReturnJwt, error) {
-
 	loc, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
 		return dto.ReturnJwt{}, constants.ErrorLoadLocationTime
 	}
-	user, err := s.UserRepository.FindOne(ctx, "id,email,name,password", "email = ?", payload.Email)
+
+	user, err := s.UserRepository.FindOne(ctx, "id, email, name, password", "email = ?", payload.Email)
 	if err != nil {
 		return dto.ReturnJwt{}, constants.UserNotFound
 	}
@@ -53,6 +53,7 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 		fmt.Println(err)
 		return dto.ReturnJwt{}, constants.InvalidPassword
 	}
+
 	secretKey := []byte(util.GetEnv("SECRET_KEY", "fallback"))
 
 	jwt, err := GenerateToken(secretKey, strconv.Itoa(user.ID), user.Email)
@@ -69,9 +70,11 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 		Email: user.Email,
 		Name:  user.Name,
 	}
+
 	jwtMode := util.GetEnv("JWT_MODE", "fallback")
 	expiredTime := time.Now().In(loc).Add(time.Hour * 730)
 	formatExpiredTime := expiredTime.Format("2006-01-02 15:04:05")
+
 	if jwtMode == "release" {
 		expiredTime := time.Now().In(loc).Add(time.Hour * 2191)
 		formatExpiredTime := expiredTime.Format("2006-01-02 15:04:05")
@@ -81,6 +84,7 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 			DataUser:  &dataUser,
 		}, nil
 	}
+
 	return dto.ReturnJwt{
 		TokenJwt:  jwt,
 		ExpiredAt: formatExpiredTime,
@@ -88,14 +92,12 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 	}, nil
 }
 
-func (s *service) GetAllUsers(ctx context.Context, Search string, limit int, offset int) []dto.AllUser {
+func (s *service) GetAllUsers(ctx context.Context, request dto.UserListParam) ([]dto.AllUser, error){
 	var AllUser []dto.AllUser
-	selectedFields := "id, name, email, role, created_at, updated_at"
-	searchQuery := "Name Like ?"
-	args := []interface{}{"%" + Search + "%"}
-	users, err := s.UserRepository.GetAll(ctx, selectedFields, searchQuery, limit, offset, args...)
+	
+	users, err := s.UserRepository.GetAll(ctx, request)
 	if err != nil {
-		return AllUser
+		return nil, err
 	}
 
 	for _, user := range users {
@@ -110,7 +112,7 @@ func (s *service) GetAllUsers(ctx context.Context, Search string, limit int, off
 		AllUser = append(AllUser, user)
 	}
 
-	return AllUser
+	return AllUser, nil
 }
 
 func (s *service) GetProfile(ctx context.Context, userSess any) dto.ProfileUser {
@@ -118,24 +120,26 @@ func (s *service) GetProfile(ctx context.Context, userSess any) dto.ProfileUser 
 		ID:    userSess.(model.User).ID,
 		Name:  userSess.(model.User).Name,
 		Email: userSess.(model.User).Email,
-		Role:  fmt.Sprintf("%s", userSess.(model.User).Role),
+		Role:  string(userSess.(model.User).Role),
 	}
 }
 
 func (s *service) DetailUser(ctx context.Context, userID int) (dto.DetailUser, error) {
-	user, err := s.UserRepository.FindOne(ctx, "id,email,name,role,created_at,updated_at", "id = ?", userID)
+	user, err := s.UserRepository.FindOne(ctx, "id, email, name, role, created_at, updated_at", "id = ?", userID)
 	if err != nil {
 		return dto.DetailUser{}, constants.NotFoundDataUser
 	}
+
 	tCreatedAt := user.CreatedAt
 	tUpdatedAt := user.UpdatedAt
 	formatCreatedAt := tCreatedAt.Format("2006-01-02 15:04:05")
 	formatUpdateddAt := tUpdatedAt.Format("2006-01-02 15:04:05")
+
 	data := dto.DetailUser{
 		ID:        userID,
 		Name:      user.Name,
 		Email:     user.Email,
-		Role:      fmt.Sprintf("%s", user.Role),
+		Role:      string(user.Role),
 		CreatedAt: formatCreatedAt,
 		UpdatedAt: formatUpdateddAt,
 	}
@@ -144,7 +148,6 @@ func (s *service) DetailUser(ctx context.Context, userID int) (dto.DetailUser, e
 }
 
 func (s *service) StoreUser(ctx context.Context, payload dto.PayloadStoreUser) error {
-
 	_, err := s.UserRepository.FindOne(ctx, "id,email,name,password", "email = ?", payload.Email)
 
 	if err != nil {
@@ -166,7 +169,6 @@ func (s *service) StoreUser(ctx context.Context, payload dto.PayloadStoreUser) e
 	}
 
 	return constants.DuplicateStoreUser
-
 }
 
 func (s *service) UpdateUser(ctx context.Context, payload dto.PayloadUpdateUser) error {
@@ -174,10 +176,12 @@ func (s *service) UpdateUser(ctx context.Context, payload dto.PayloadUpdateUser)
 	if err != nil {
 		return constants.NotFoundDataUser
 	}
+
 	loc, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
 		return constants.ErrorLoadLocationTime
 	}
+
 	updateUser := dto.PayloadUpdateUser{
 		Name:      payload.Name,
 		Email:     payload.Email,
@@ -233,8 +237,10 @@ func GenerateToken(secretKey []byte, userID string, email string) (string, error
 	if err != nil {
 		return "", err
 	}
+
 	jwtMode := util.GetEnv("JWT_MODE", "fallback")
 	expiredTime := time.Now().In(loc).Add(time.Hour * 730).Unix()
+
 	if jwtMode == "release" {
 		expiredTime := time.Now().In(loc).Add(time.Hour * 2191).Unix()
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -258,11 +264,11 @@ func GenerateToken(secretKey []byte, userID string, email string) (string, error
 		"email":   email,
 		"exp":     expiredTime,
 	})
+
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
 		return "", err
 	}
 
 	return tokenString, nil
-
 }

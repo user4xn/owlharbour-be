@@ -12,7 +12,7 @@ type Factory struct {
 	AppRepository            repository.App
 	ShipRepository           repository.Ship
 	PairingRequestRepository repository.PairingRequest
-	UserRepository           repository.UserInterface
+	UserRepository           repository.User
 }
 
 func NewFactory() *Factory {
@@ -28,7 +28,7 @@ func NewFactory() *Factory {
 		AppRepository:            repository.NewAppRepository(db, redisClient),
 		ShipRepository:           repository.NewShipRepository(db, redisClient),
 		PairingRequestRepository: repository.NewPairingRequestRepository(db, redisClient),
-		UserRepository:           repository.NewUserRepository(db),
+		UserRepository:           repository.NewUserRepository(db, redisClient),
 		// Assign the appropriate implementation of the ReturInsightRepository
 	}
 }

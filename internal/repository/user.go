@@ -2,17 +2,22 @@ package repository
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"simpel-api/internal/dto"
 	"simpel-api/internal/model"
+	"simpel-api/pkg/helper"
 	"simpel-api/pkg/util"
+	"strings"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
-type UserInterface interface {
-	Init() *gorm.DB
-	GetAll(ctx context.Context, selectedFields string, searchQuery string, limit, offset int, args ...interface{}) ([]dto.AllUser, error)
+type User interface {
+	GetAll(ctx context.Context, request dto.UserListParam) ([]dto.AllUser, error)
 	Find(ctx context.Context, queries []string, argsSlice ...[]interface{}) (model.User, error)
 	Store(ctx context.Context, data model.User) error
 	FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.User, error)
@@ -20,26 +25,56 @@ type UserInterface interface {
 	DeleteOne(ctx context.Context, query string, args ...interface{}) error
 }
 
-type User struct {
-	Database *gorm.DB
+type user struct {
+	Db           *gorm.DB
+	RedisClient  *redis.Client
+	CacheEnabled bool
 }
 
-func NewUserRepository(db *gorm.DB) *User {
-	return &User{
-		Database: db,
+func NewUserRepository(db *gorm.DB, redisClient *redis.Client) User {
+	return &user{
+		Db:           db,
+		RedisClient:  redisClient,
+		CacheEnabled: true,
 	}
 }
 
-func (u *User) Init() *gorm.DB {
-	return u.Database
-}
-func (u *User) GetAll(ctx context.Context, selectedFields string, searchQuery string, limit, offset int, args ...interface{}) ([]dto.AllUser, error) {
+func (r *user) GetAll(ctx context.Context, request dto.UserListParam) ([]dto.AllUser, error) {
+	paramJSON, err := json.Marshal(request)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, err
+	}
+
+	hash := sha1.Sum(paramJSON)
+	uniqueString := fmt.Sprintf("%x", hash)
+
+	cacheKey := "user_list-" + uniqueString
+
+	if r.CacheEnabled {
+		cachedData, err := r.RedisClient.Get(ctx, cacheKey).Result()
+		if err == nil {
+			var cachedInfo []dto.AllUser
+			if err := json.Unmarshal([]byte(cachedData), &cachedInfo); err == nil {
+				return cachedInfo, nil
+			}
+		}
+	}
+
+	tx := r.Db.WithContext(ctx).Begin()
+
+	query := tx.Model(&model.User{})
+
+	if request.Search != "" {
+		searchLower := strings.ToLower(request.Search)
+		query = query.Where("lower(name) LIKE ? OR lower(email) LIKE ?", "%"+searchLower+"%", "%"+searchLower+"%")
+	}
+
+	query = query.Limit(request.Limit).Offset(request.Offset).Order("created_at DESC")
+
 	var res []model.User
-
-	db := u.Database.WithContext(ctx).Model(&model.User{})
-	db = util.SetSelectFields(db, selectedFields)
-
-	if err := db.Where(searchQuery, args...).Limit(limit).Offset(offset).Find(&res).Error; err != nil {
+	if err := query.Find(&res).Error; err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -53,28 +88,49 @@ func (u *User) GetAll(ctx context.Context, selectedFields string, searchQuery st
 			ID:        user.ID,
 			Name:      user.Name,
 			Email:     user.Email,
-			Role:      fmt.Sprintf("%s", user.Role),
+			Role:      string(user.Role),
 			CreatedAt: formatCreatedAt,
 			UpdatedAt: formatUpdatedAt,
 		}
 		AllUser = append(AllUser, userDTO)
 	}
 
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if r.CacheEnabled {
+		jsonData, err := json.Marshal(AllUser)
+		if err == nil {
+			r.RedisClient.Set(ctx, cacheKey, jsonData, time.Hour)
+		} else {
+			fmt.Println("Error marshalling data for cache:", err)
+		}
+	}
+
 	return AllUser, nil
 }
 
-func (u *User) Store(ctx context.Context, data model.User) error {
-	tx := u.Database.WithContext(ctx)
+func (r *user) Store(ctx context.Context, data model.User) error {
+	tx := r.Db.WithContext(ctx)
 	if err := tx.Model(model.User{}).Create(&data).Error; err != nil {
 		return err
 	}
+
+	cacheKey := "user_list-"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
+		return nil
+	}
+
 	return nil
 }
 
-func (u *User) FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.User, error) {
+func (r *user) FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.User, error) {
 	var res model.User
 
-	db := u.Database.WithContext(ctx).Model(model.User{})
+	db := r.Db.WithContext(ctx).Model(model.User{})
 	db = util.SetSelectFields(db, selectedFields)
 
 	if err := db.Where(query, args...).Take(&res).Error; err != nil {
@@ -84,10 +140,10 @@ func (u *User) FindOne(ctx context.Context, selectedFields string, query string,
 	return res, nil
 }
 
-func (u *User) Find(ctx context.Context, queries []string, argsSlice ...[]interface{}) (model.User, error) {
+func (r *user) Find(ctx context.Context, queries []string, argsSlice ...[]interface{}) (model.User, error) {
 	var res model.User
 
-	db := u.Database.WithContext(ctx).Model(model.User{})
+	db := r.Db.WithContext(ctx).Model(model.User{})
 
 	for idx, query := range queries {
 		if idx < len(argsSlice) {
@@ -102,20 +158,33 @@ func (u *User) Find(ctx context.Context, queries []string, argsSlice ...[]interf
 	return res, nil
 }
 
-func (u *User) UpdateOne(ctx context.Context, updatedModels *dto.PayloadUpdateUser, updatedField string, query string, args ...interface{}) error {
+func (r *user) UpdateOne(ctx context.Context, updatedModels *dto.PayloadUpdateUser, updatedField string, query string, args ...interface{}) error {
 	fmt.Println(updatedModels)
-	modelDb := u.Database.WithContext(ctx).Model(&model.User{})
+	modelDb := r.Db.WithContext(ctx).Model(&model.User{})
 	if err := util.SetSelectFields(modelDb, updatedField).Where(query, args...).Updates(updatedModels).Error; err != nil {
 		return err
 	}
+
+	cacheKey := "user_list-"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
+		return nil
+	}
+
 	return nil
 }
 
-func (u *User) DeleteOne(ctx context.Context, query string, args ...interface{}) error {
-	db := u.Database.WithContext(ctx).Model(&model.User{})
+func (r *user) DeleteOne(ctx context.Context, query string, args ...interface{}) error {
+	db := r.Db.WithContext(ctx).Model(&model.User{})
 
 	if err := db.Where(query, args...).Delete(&model.User{}).Error; err != nil {
 		return err
+	}
+
+	cacheKey := "user_list-"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
+		return nil
 	}
 
 	return nil

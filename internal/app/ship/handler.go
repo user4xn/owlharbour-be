@@ -40,14 +40,14 @@ func (h *handler) PairingShip(c *gin.Context) {
 		return
 	}
 
-	service := h.service.PairingShip(ctx, request)
-	if service != nil {
-		response := util.APIResponse(service.Error(), http.StatusBadRequest, "failed", nil)
-		c.JSON(http.StatusBadRequest, response)
+	err := h.service.PairingShip(ctx, request)
+	if err != nil {
+		response := util.APIResponse("failed to sent pairing request: " + err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
-	response := util.APIResponse("Pairing request sucessfully sent, please wait for admin approval.", http.StatusOK, "success", service)
+	response := util.APIResponse("Pairing request sucessfully sent, please wait for admin approval", http.StatusOK, "success", nil)
 	c.JSON(http.StatusOK, response)
 }
 
@@ -65,6 +65,7 @@ func (h *handler) PairingRequestList(c *gin.Context) {
 	if limit == 0 {
 		limit = 10
 	}
+
 	statusArray := strings.Split(statusParam, ",")
 	param := dto.PairingListParam{
 		Offset: offset,
@@ -75,7 +76,7 @@ func (h *handler) PairingRequestList(c *gin.Context) {
 
 	res, err := h.service.PairingRequestList(ctx, param)
 	if err != nil {
-		response := util.APIResponse("Failed to retrieve pairing request list", http.StatusInternalServerError, "failed", nil)
+		response := util.APIResponse("Failed to retrieve pairing request list: " + err.Error(), http.StatusInternalServerError, "failed", nil)
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
@@ -101,14 +102,14 @@ func (h *handler) PairingAction(c *gin.Context) {
 		return
 	}
 
-	service := h.service.PairingAction(ctx, request)
-	if service != nil {
-		response := util.APIResponse(service.Error(), http.StatusBadRequest, "failed", nil)
-		c.JSON(http.StatusBadRequest, response)
+	err := h.service.PairingAction(ctx, request)
+	if err != nil {
+		response := util.APIResponse("Unable to update pairing data: " + err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
-	response := util.APIResponse("Pairing data successfully updated.", http.StatusOK, "success", service)
+	response := util.APIResponse("Pairing data successfully updated", http.StatusOK, "success", nil)
 	c.JSON(http.StatusOK, response)
 }
 
@@ -136,7 +137,7 @@ func (h *handler) ShipList(c *gin.Context) {
 
 	res, err := h.service.ShipList(ctx, param)
 	if err != nil {
-		response := util.APIResponse("Failed to retrieve ship list", http.StatusInternalServerError, "failed", nil)
+		response := util.APIResponse("Failed to retrieve ship list: " + err.Error(), http.StatusInternalServerError, "failed", nil)
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
@@ -167,7 +168,7 @@ func (h *handler) ShipByDevice(c *gin.Context) {
 			response := util.APIResponse("invalid device id, no ship data", http.StatusBadRequest, "failed", nil)
 			c.JSON(http.StatusBadRequest, response)
 		} else {
-			response := util.APIResponse("Failed to retrieve ship data", http.StatusInternalServerError, "failed", nil)
+			response := util.APIResponse("Failed to retrieve ship data: " + err.Error(), http.StatusInternalServerError, "failed", nil)
 			c.JSON(http.StatusInternalServerError, response)
 		}
 		return
@@ -194,19 +195,19 @@ func (h *handler) RecordLog(c *gin.Context) {
 		return
 	}
 
-	service := h.service.RecordLocationShip(ctx, request)
-	if service != nil {
-		if service == gorm.ErrRecordNotFound {
-			response := util.APIResponse("invalid device id, no ship data", http.StatusBadRequest, "failed", nil)
+	err := h.service.RecordLocationShip(ctx, request)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			response := util.APIResponse("Invalid device id, no ship data", http.StatusBadRequest, "failed", nil)
 			c.JSON(http.StatusBadRequest, response)
 		} else {
-			response := util.APIResponse(service.Error(), http.StatusInternalServerError, "failed", nil)
+			response := util.APIResponse("Unable to record location: " + err.Error(), http.StatusInternalServerError, "failed", nil)
 			c.JSON(http.StatusInternalServerError, response)
 		}
 		return
 	}
 
-	response := util.APIResponse("Location successfully recorded", http.StatusOK, "success", service)
+	response := util.APIResponse("Location successfully recorded", http.StatusOK, "success", nil)
 	c.JSON(http.StatusOK, response)
 }
 
@@ -233,7 +234,7 @@ func (h *handler) UpdateShipDetail(c *gin.Context) {
 			response := util.APIResponse("invalid ship id, no ship data", http.StatusBadRequest, "failed", nil)
 			c.JSON(http.StatusBadRequest, response)
 		} else {
-			response := util.APIResponse("Failed to update ship data", http.StatusInternalServerError, "failed", nil)
+			response := util.APIResponse("Failed to update ship data:" + err.Error(), http.StatusInternalServerError, "failed", nil)
 			c.JSON(http.StatusInternalServerError, response)
 		}
 		return
@@ -265,7 +266,7 @@ func (h *handler) ShipDetail(c *gin.Context) {
 			response := util.APIResponse("invalid ship id, no ship data", http.StatusBadRequest, "failed", nil)
 			c.JSON(http.StatusBadRequest, response)
 		} else {
-			response := util.APIResponse("Failed to retrieve ship data", http.StatusInternalServerError, "failed", nil)
+			response := util.APIResponse("Failed to retrieve detail ship data: " + err.Error(), http.StatusInternalServerError, "failed", nil)
 			c.JSON(http.StatusInternalServerError, response)
 		}
 		return

@@ -24,195 +24,208 @@ func NewHandler(f *factory.Factory) *handler {
 	}
 }
 
-func (h *handler) Login(g *gin.Context) {
+func (h *handler) Login(c *gin.Context) {
 	var payload dto.PayloadLogin
-	if err := g.ShouldBind(&payload); err != nil {
+	if err := c.ShouldBind(&payload); err != nil {
 		errorMessage := gin.H{"errors": "please fill data"}
 		if err != io.EOF {
 			errors := util.FormatValidationError(err)
 			errorMessage = gin.H{"errors": errors}
 		}
 		response := util.APIResponse("Failed Login", http.StatusUnprocessableEntity, "failed", errorMessage)
-		g.JSON(http.StatusUnprocessableEntity, response)
+		c.JSON(http.StatusUnprocessableEntity, response)
 		return
 	}
 
-	data, err := h.service.LoginService(g, payload)
+	data, err := h.service.LoginService(c, payload)
 	if err == constants.UserNotFound {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.UserNotFound), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.InvalidPassword {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.InvalidPassword), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.ErrorLoadLocationTime {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorLoadLocationTime), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.ErrorGenerateJwt {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorGenerateJwt), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.EmptyGenerateJwt {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.EmptyGenerateJwt), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
-	session := sessions.Default(g)
+	session := sessions.Default(c)
 	session.Set("user_id", data.DataUser.ID)
 	session.Set("token", data.TokenJwt)
 	session.Save()
 
 	response := util.APIResponse("Success Login", http.StatusOK, "success", data)
-	g.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) GetProfile(g *gin.Context) {
-	data := h.service.GetProfile(g, g.Value("user"))
+func (h *handler) GetProfile(c *gin.Context) {
+	data := h.service.GetProfile(c, c.Value("user"))
 	response := util.APIResponse("Success Get Profile", http.StatusOK, "success", data)
-	g.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) GetAllUsers(g *gin.Context) {
-	search := g.Query("search")
-	strLimit := g.Query("limit")
-	strOffset := g.Query("offset")
+func (h *handler) GetAllUsers(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	search := c.Query("search")
+	strLimit := c.Query("limit")
+	strOffset := c.Query("offset")
 	limit, _ := strconv.Atoi(strLimit)
 	offset, _ := strconv.Atoi(strOffset)
 
-	data := h.service.GetAllUsers(g, search, limit, offset)
+	request := dto.UserListParam{
+		Search: search,
+		Limit: limit,
+		Offset: offset,
+	}
+
+	data, err := h.service.GetAllUsers(ctx, request)
+	if err != nil {
+		response := util.APIResponse("Failed to retrieve user list" + err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
 
 	response := util.APIResponse("Success Get List Users", http.StatusOK, "success", data)
-	g.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) StoreUser(g *gin.Context) {
+func (h *handler) StoreUser(c *gin.Context) {
 	var payload dto.PayloadStoreUser
-	if err := g.ShouldBind(&payload); err != nil {
+	if err := c.ShouldBind(&payload); err != nil {
 		errorMessage := gin.H{"errors": "please fill data"}
 		if err != io.EOF {
 			errors := util.FormatValidationError(err)
 			errorMessage = gin.H{"errors": errors}
 		}
 		response := util.APIResponse("Error Validation", http.StatusUnprocessableEntity, "failed", errorMessage)
-		g.JSON(http.StatusUnprocessableEntity, response)
+		c.JSON(http.StatusUnprocessableEntity, response)
 		return
 	}
 
-	err := h.service.StoreUser(g, payload)
+	err := h.service.StoreUser(c, payload)
 
 	if err == constants.DuplicateStoreUser {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.DuplicateStoreUser), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.ErrorHashPassword {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorHashPassword), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	response := util.APIResponse("Success Store User", http.StatusOK, "success", nil)
-	g.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) LogoutHandler(g *gin.Context) {
-	session := sessions.Default(g)
+func (h *handler) LogoutHandler(c *gin.Context) {
+	session := sessions.Default(c)
 	tokenString := session.Get("token")
 	if tokenString != nil {
 		session.Clear()
 		session.Save()
 		response := util.APIResponse("Success Logout", http.StatusOK, "success", nil)
-		g.JSON(http.StatusOK, response)
+		c.JSON(http.StatusOK, response)
 		return
 	}
 }
 
-func (h *handler) DetailUser(g *gin.Context) {
-	userID, _ := strconv.Atoi(g.Param("user_id"))
+func (h *handler) DetailUser(c *gin.Context) {
+	userID, _ := strconv.Atoi(c.Param("user_id"))
 
-	data, err := h.service.DetailUser(g, userID)
+	data, err := h.service.DetailUser(c, userID)
 
 	if err == constants.NotFoundDataUser {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.NotFoundDataUser), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	response := util.APIResponse("Success Get Detail User", http.StatusOK, "success", data)
-	g.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) UpdateUser(g *gin.Context) {
+func (h *handler) UpdateUser(c *gin.Context) {
 	var payload dto.PayloadUpdateUser
-	if err := g.ShouldBind(&payload); err != nil {
+	if err := c.ShouldBind(&payload); err != nil {
 		errorMessage := gin.H{"errors": "please fill data"}
 		if err != io.EOF {
 			errors := util.FormatValidationError(err)
 			errorMessage = gin.H{"errors": errors}
 		}
 		response := util.APIResponse("there is an incomplete request", http.StatusUnprocessableEntity, "failed", errorMessage)
-		g.JSON(http.StatusUnprocessableEntity, response)
+		c.JSON(http.StatusUnprocessableEntity, response)
 		return
 	}
 
-	err := h.service.UpdateUser(g, payload)
+	err := h.service.UpdateUser(c, payload)
 	if err == constants.NotFoundDataUser {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.NotFoundDataUser), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.ErrorLoadLocationTime {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorLoadLocationTime), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.ErrorHashPassword {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorHashPassword), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.FailedUpdateUser {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.FailedUpdateUser), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	response := util.APIResponse("Success Update User", http.StatusOK, "success", nil)
-	g.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) DeleteUser(g *gin.Context) {
-	userID, _ := strconv.Atoi(g.Param("user_id"))
+func (h *handler) DeleteUser(c *gin.Context) {
+	userID, _ := strconv.Atoi(c.Param("user_id"))
 
-	err := h.service.DeleteUser(g, userID)
+	err := h.service.DeleteUser(c, userID)
 
 	if err == constants.NotFoundDataUser {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.NotFoundDataUser), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err == constants.FailedDeleteUser {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.FailedDeleteUser), http.StatusBadRequest, "failed", nil)
-		g.JSON(http.StatusBadRequest, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	response := util.APIResponse("Success Get Detail User", http.StatusOK, "success", nil)
-	g.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }

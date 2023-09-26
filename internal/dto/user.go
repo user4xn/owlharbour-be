@@ -15,6 +15,12 @@ type (
 		Password string `json:"password" binding:"required"`
 	}
 
+	UserListParam struct {
+		Search string `json:"search"`
+		Limit  int    `json:"limit"`
+		Offset int    `json:"offset"`
+	}
+
 	PayloadStoreUser struct {
 		Name      string    `json:"name" binding:"required"`
 		Email     string    `json:"email" binding:"required"`
