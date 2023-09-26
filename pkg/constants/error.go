@@ -19,4 +19,5 @@ var (
 
 	NotFoundDataUser = errors.New("Not Found Data User")
 	FailedUpdateUser = errors.New("Failed Update User")
+	FailedDeleteUser = errors.New("Failed Delete User")
 )

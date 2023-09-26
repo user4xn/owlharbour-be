@@ -195,3 +195,24 @@ func (h *handler) UpdateUser(g *gin.Context) {
 	response := util.APIResponse("Success Update User", http.StatusOK, "success", nil)
 	g.JSON(http.StatusOK, response)
 }
+
+func (h *handler) DeleteUser(g *gin.Context) {
+	userID, _ := strconv.Atoi(g.Param("user_id"))
+
+	err := h.service.DeleteUser(g, userID)
+
+	if err == constants.NotFoundDataUser {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.NotFoundDataUser), http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err == constants.FailedDeleteUser {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.FailedDeleteUser), http.StatusBadRequest, "failed", nil)
+		g.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Success Get Detail User", http.StatusOK, "success", nil)
+	g.JSON(http.StatusOK, response)
+}

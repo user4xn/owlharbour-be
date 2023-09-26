@@ -28,6 +28,7 @@ type Service interface {
 	DetailUser(ctx context.Context, userID int) (dto.DetailUser, error)
 	StoreUser(ctx context.Context, payload dto.PayloadStoreUser) error
 	UpdateUser(ctx context.Context, payload dto.PayloadUpdateUser) error
+	DeleteUser(ctx context.Context, userID int) error
 }
 
 func NewService(f *factory.Factory) Service {
@@ -204,6 +205,20 @@ func (s *service) UpdateUser(ctx context.Context, payload dto.PayloadUpdateUser)
 	if err != nil {
 		log.Println("Error updating user:", err)
 		return constants.FailedUpdateUser
+	}
+
+	return nil
+}
+
+func (s *service) DeleteUser(ctx context.Context, userID int) error {
+	user, err := s.UserRepository.FindOne(ctx, "id", "id = ?", userID)
+	if err != nil {
+		return constants.NotFoundDataUser
+	}
+
+	err = s.UserRepository.DeleteOne(ctx, "id = ?", user.ID)
+	if err != nil {
+		return constants.FailedDeleteUser
 	}
 
 	return nil

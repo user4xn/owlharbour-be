@@ -15,4 +15,5 @@ func (h *handler) Router(g *gin.RouterGroup) {
 	g.POST("/store", h.StoreUser)
 	g.PUT("/update", h.UpdateUser)
 	g.POST("/logout", h.LogoutHandler)
+	g.DELETE("/delete/:user_id", h.DeleteUser)
 }

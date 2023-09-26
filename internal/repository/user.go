@@ -17,6 +17,7 @@ type UserInterface interface {
 	Store(ctx context.Context, data model.User) error
 	FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.User, error)
 	UpdateOne(ctx context.Context, updatedModels *dto.PayloadUpdateUser, updatedField string, query string, args ...interface{}) error
+	DeleteOne(ctx context.Context, query string, args ...interface{}) error
 }
 
 type User struct {
@@ -107,5 +108,15 @@ func (u *User) UpdateOne(ctx context.Context, updatedModels *dto.PayloadUpdateUs
 	if err := util.SetSelectFields(modelDb, updatedField).Where(query, args...).Updates(updatedModels).Error; err != nil {
 		return err
 	}
+	return nil
+}
+
+func (u *User) DeleteOne(ctx context.Context, query string, args ...interface{}) error {
+	db := u.Database.WithContext(ctx).Model(&model.User{})
+
+	if err := db.Where(query, args...).Delete(&model.User{}).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
