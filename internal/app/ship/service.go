@@ -24,7 +24,8 @@ type Service interface {
 	PairingShip(ctx context.Context, request dto.PairingRequest) error
 	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
 	PairingAction(ctx context.Context, request dto.PairingActionRequest) error
-	ShipByDevice(ctx context.Context, DeviceID int) (*dto.ShipMobileDetailResponse, error)
+	PairingDetailByDevice(ctx context.Context, DeviceID string) (*dto.DetailPairingResponse, error)
+	ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipMobileDetailResponse, error)
 	ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error)
 	RecordLocationShip(ctx context.Context, request dto.ShipRecordRequest) error
 	UpdateShipDetail(ctx context.Context, request dto.ShipAddonDetailRequest) error
@@ -133,7 +134,7 @@ func (s *service) ShipList(ctx context.Context, request dto.ShipListParam) ([]dt
 	return res, nil
 }
 
-func (s *service) ShipByDevice(ctx context.Context, DeviceID int) (*dto.ShipMobileDetailResponse, error) {
+func (s *service) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipMobileDetailResponse, error) {
 	appInfo, err := s.appRepository.AppInfo(ctx)
 	if err != nil {
 		return nil, err
@@ -395,6 +396,15 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 		CreatedAt:       ship.CreatedAt.Format("2006-01-02 15:04:05"),
 		DockLogs:        dockedLogs,
 		LocationLogs:    locationLogs,
+	}
+
+	return res, nil
+}
+
+func (s *service) PairingDetailByDevice(ctx context.Context, DeviceID string) (*dto.DetailPairingResponse, error) {
+	res, err := s.pairingRequestRepository.PairingDetailByDevice(ctx, DeviceID)
+	if err != nil {
+		return nil, err
 	}
 
 	return res, nil

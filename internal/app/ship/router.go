@@ -8,6 +8,7 @@ import (
 
 func (h *handler) Router(g *gin.RouterGroup) {
 	g.POST("/pairing", h.PairingShip)
+	g.GET("/pairing/detail/:device_id", h.PairingDetailByDevice)
 	g.POST("/record-log", h.RecordLog)
 
 	g.Use(middleware.Authenticate())

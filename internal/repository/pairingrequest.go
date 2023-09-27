@@ -18,6 +18,7 @@ type PairingRequest interface {
 	StorePairingRequests(ctx context.Context, request dto.PairingRequest) error
 	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
 	UpdatedPairingStatus(ctx context.Context, request dto.PairingActionRequest) (*dto.PairingRequestResponse, error)
+	PairingDetailByDevice(ctx context.Context, DeviceID string) (*dto.DetailPairingResponse, error)
 }
 
 type pairingRequest struct {
@@ -198,4 +199,57 @@ func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, request dto.P
 	}
 
 	return &pairingData, nil
+}
+
+func (r *pairingRequest) PairingDetailByDevice(ctx context.Context, DeviceID string) (*dto.DetailPairingResponse, error) {
+	tx := r.Db.WithContext(ctx).Begin()
+
+	var pairing model.PairingRequest
+	err := tx.Where("device_id = ?", DeviceID).First(&pairing).Error
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	pairingDetail := dto.DetailPairingResponse{
+		ShipName:       pairing.Name,
+		ReponsibleName: pairing.ResponsibleName,
+		Phone:          pairing.Phone,
+		DeviceID:       pairing.DeviceID,
+		Status:         string(pairing.Status),
+		SubmittedAt:    pairing.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	if pairing.Status != model.Pending {
+		pairingDetail.RespondedAt = pairing.UpdatedAt.Format("2006-01-02 15:04:05")
+	} else {
+		pairingDetail.RespondedAt = ""
+	}
+
+	var historyPairing []model.PairingRequest
+	if err := tx.Where("device_id = ? AND status != 'pending'", DeviceID).Find(&historyPairing).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	var resHitory []dto.HistoryPairing
+	for _, history := range historyPairing {
+		resHitory = append(resHitory, dto.HistoryPairing{
+			ShipName:       history.Name,
+			ReponsibleName: history.ResponsibleName,
+			Phone:          history.Phone,
+			Status:         string(history.Status),
+			SubmittedAt:    history.CreatedAt.Format("2006-01-02 15:04:05"),
+			RespondedAt:    history.UpdatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	pairingDetail.HistoryPairing = resHitory
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return &pairingDetail, nil
 }

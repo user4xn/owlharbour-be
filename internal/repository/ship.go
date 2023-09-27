@@ -19,7 +19,7 @@ import (
 type Ship interface {
 	StoreNewShip(ctx context.Context, request dto.PairingRequestResponse) error
 	ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error)
-	ShipByDevice(ctx context.Context, DeviceID int) (*dto.ShipMobileDetailResponse, error)
+	ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipMobileDetailResponse, error)
 	ShipByID(ctx context.Context, ShipID int) (*model.Ship, error)
 	GetLastDockedLog(ctx context.Context, ShipID int) (*dto.ShipDockedLog, error)
 	StoreDockedLog(ctx context.Context, request dto.ShipDockedLogStore) error
@@ -150,7 +150,7 @@ func (r *ship) ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.S
 	return shipList, nil
 }
 
-func (r *ship) ShipByDevice(ctx context.Context, DeviceID int) (*dto.ShipMobileDetailResponse, error) {
+func (r *ship) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipMobileDetailResponse, error) {
 	tx := r.Db.WithContext(ctx).Begin()
 
 	var ship model.Ship
