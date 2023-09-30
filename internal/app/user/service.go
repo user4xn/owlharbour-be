@@ -12,6 +12,7 @@ import (
 	"simpel-api/pkg/util"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
@@ -29,6 +30,7 @@ type Service interface {
 	StoreUser(ctx context.Context, payload dto.PayloadStoreUser) error
 	UpdateUser(ctx context.Context, payload dto.PayloadUpdateUser) error
 	DeleteUser(ctx context.Context, userID int) error
+	ChangePassword(ctx context.Context, userID int, payload dto.PayloadChangePassword) error
 }
 
 func NewService(f *factory.Factory) Service {
@@ -92,9 +94,9 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 	}, nil
 }
 
-func (s *service) GetAllUsers(ctx context.Context, request dto.UserListParam) ([]dto.AllUser, error){
+func (s *service) GetAllUsers(ctx context.Context, request dto.UserListParam) ([]dto.AllUser, error) {
 	var AllUser []dto.AllUser
-	
+
 	users, err := s.UserRepository.GetAll(ctx, request)
 	if err != nil {
 		return nil, err
@@ -211,6 +213,51 @@ func (s *service) UpdateUser(ctx context.Context, payload dto.PayloadUpdateUser)
 		return constants.FailedUpdateUser
 	}
 
+	return nil
+}
+
+func (s *service) ChangePassword(ctx context.Context, userID int, payload dto.PayloadChangePassword) error {
+	user, err := s.UserRepository.FindOne(ctx, "id,password", "id = ?", userID)
+	if err != nil {
+		return constants.NotFoundDataUser
+	}
+
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		return constants.ErrorLoadLocationTime
+	}
+
+	if payload.PasswordConfirmation != payload.Password {
+		return constants.FailedNotSamePassword
+	}
+
+	charCount := utf8.RuneCountInString(payload.Password)
+
+	if charCount < 8 {
+		return constants.MinimCharacterPassword
+	}
+
+	password := []byte(payload.Password)
+	hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	if err != nil {
+		log.Println("Error hashing password:", err)
+		return constants.ErrorHashPassword
+	}
+	checkPassword := ComparePasswords(user.Password, payload.Password)
+	if checkPassword == nil {
+		return constants.PasswordSameCurrent
+	}
+
+	updateUser := dto.
+		PayloadUpdateUser{
+		Password:  string(hashedPassword),
+		UpdatedAt: time.Now().In(loc),
+	}
+	err = s.UserRepository.UpdateOne(ctx, &updateUser, "password,updated_at", "id = ?", user.ID)
+	if err != nil {
+		log.Println("Error change password:", err)
+		return constants.FailedUpdateUser
+	}
 	return nil
 }
 

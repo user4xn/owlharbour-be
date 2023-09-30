@@ -15,6 +15,11 @@ type (
 		Password string `json:"password" binding:"required"`
 	}
 
+	PayloadChangePassword struct {
+		Password             string `json:"password" binding:"required"`
+		PasswordConfirmation string `json:"password_confirmation" binding:"required"`
+	}
+
 	UserListParam struct {
 		Search string `json:"search"`
 		Limit  int    `json:"limit"`

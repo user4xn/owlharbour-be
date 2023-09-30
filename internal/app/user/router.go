@@ -11,8 +11,8 @@ func (h *handler) Router(g *gin.RouterGroup) {
 
 	g.Use(middleware.Authenticate())
 	g.GET("/get-profile", h.GetProfile)
+	g.POST("/change-password", h.ChangePassword)
 	g.POST("/logout", h.LogoutHandler)
-	
 	g.GET("/list", h.GetAllUsers)
 	g.GET("/detail/:user_id", h.DetailUser)
 	g.POST("/store", h.StoreUser)

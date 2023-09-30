@@ -20,4 +20,9 @@ var (
 	NotFoundDataUser = errors.New("Not Found Data User")
 	FailedUpdateUser = errors.New("Failed Update User")
 	FailedDeleteUser = errors.New("Failed Delete User")
+
+	FailedChangePassword   = errors.New("Failed Change Password")
+	FailedNotSamePassword  = errors.New("Please Confirm The Same Password")
+	MinimCharacterPassword = errors.New("Minimum Password Is 8 Characters")
+	PasswordSameCurrent    = errors.New("The Password Is The Same As The Current One")
 )
