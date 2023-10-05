@@ -1,7 +1,9 @@
 package user
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"simpel-api/internal/dto"
@@ -11,11 +13,14 @@ import (
 	"simpel-api/pkg/constants"
 	"simpel-api/pkg/util"
 	"strconv"
+	"text/template"
 	"time"
 	"unicode/utf8"
 
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
+
+	"gopkg.in/gomail.v2"
 )
 
 type service struct {
@@ -31,6 +36,7 @@ type Service interface {
 	UpdateUser(ctx context.Context, payload dto.PayloadUpdateUser) error
 	DeleteUser(ctx context.Context, userID int) error
 	ChangePassword(ctx context.Context, userID int, payload dto.PayloadChangePassword) error
+	VerifyEmail(ctx context.Context, base64String string) error
 }
 
 func NewService(f *factory.Factory) Service {
@@ -45,7 +51,7 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 		return dto.ReturnJwt{}, constants.ErrorLoadLocationTime
 	}
 
-	user, err := s.UserRepository.FindOne(ctx, "id, email, name, password", "email = ?", payload.Email)
+	user, err := s.UserRepository.FindOne(ctx, "id, email, name, password, email_verified_at", "email = ?", payload.Email)
 	if err != nil {
 		return dto.ReturnJwt{}, constants.UserNotFound
 	}
@@ -54,6 +60,38 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 	if err != nil {
 		fmt.Println(err)
 		return dto.ReturnJwt{}, constants.InvalidPassword
+	}
+
+	if user.EmailVerifiedAt == nil {
+
+		tmpl, err := template.ParseFiles("pkg/resource/email_verify.html")
+		if err != nil {
+			fmt.Println("Error parsing template:", err)
+			return dto.ReturnJwt{}, constants.InvalidPassword
+		}
+
+		emailByte := []byte(user.Email)
+		encodedString := base64.StdEncoding.EncodeToString(emailByte)
+		urlVerify := "/api/v1/user/verify/email/"
+
+		data := struct {
+			Name string
+			Url  string
+		}{
+			Name: user.Name,
+			Url:  util.GetEnv("APP_URL", "fallback") + ":" + util.GetEnv("APP_PORT", "fallback") + urlVerify + encodedString,
+		}
+
+		var tplBuffer = new(bytes.Buffer)
+		errExecute := tmpl.Execute(tplBuffer, data)
+		if errExecute != nil {
+			fmt.Println("Error executing template:", err)
+			return dto.ReturnJwt{}, constants.InvalidPassword
+		}
+
+		go SendMail(user.Email, "Verifikasi Akun Simpel", tplBuffer.String())
+
+		return dto.ReturnJwt{}, constants.UserNotVerifyEmail
 	}
 
 	secretKey := []byte(util.GetEnv("SECRET_KEY", "fallback"))
@@ -261,6 +299,39 @@ func (s *service) ChangePassword(ctx context.Context, userID int, payload dto.Pa
 	return nil
 }
 
+func (s *service) VerifyEmail(ctx context.Context, base64String string) error {
+	emailDecode, err := base64.StdEncoding.DecodeString(base64String)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return constants.ErrorDecodeBase64
+	}
+	user, err := s.UserRepository.FindOne(ctx, "id,email_verified_at", "email = ?", emailDecode)
+	if err != nil {
+		return constants.NotFoundDataUser
+	}
+
+	if user.EmailVerifiedAt != nil {
+		return nil
+	}
+
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		return constants.ErrorLoadLocationTime
+	}
+
+	updateUser := dto.PayloadUpdateUser{
+		EmailVerifiedAt: time.Now().In(loc),
+	}
+
+	err = s.UserRepository.UpdateOne(ctx, &updateUser, "email_verified_at", "id = ?", user.ID)
+	if err != nil {
+		log.Println("Error updating user:", err)
+		return constants.FailedVerifyEmail
+	}
+
+	return nil
+}
+
 func (s *service) DeleteUser(ctx context.Context, userID int) error {
 	user, err := s.UserRepository.FindOne(ctx, "id", "id = ?", userID)
 	if err != nil {
@@ -318,4 +389,22 @@ func GenerateToken(secretKey []byte, userID string, email string) (string, error
 	}
 
 	return tokenString, nil
+}
+
+func SendMail(to, subject, body string) error {
+	from := util.GetEnv("MAIL_USERNAME", "fallback")
+	password := util.GetEnv("MAIL_PASSWORD", "fallback")
+	msg := gomail.NewMessage()
+	msg.SetHeader("From", from)
+	msg.SetHeader("To", to)
+	msg.SetHeader("Subject", subject)
+	msg.SetBody("text/html", body)
+
+	d := gomail.NewDialer("smtp.gmail.com", 587, from, password)
+
+	if err := d.DialAndSend(msg); err != nil {
+		return err
+	}
+
+	return nil
 }

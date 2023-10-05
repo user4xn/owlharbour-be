@@ -36,12 +36,13 @@ type (
 	}
 
 	PayloadUpdateUser struct {
-		ID        int       `json:"id" binding:"required"`
-		Name      string    `json:"name" binding:"required"`
-		Email     string    `json:"email" binding:"required"`
-		Password  string    `json:"password"`
-		Role      string    `json:"role" binding:"required"`
-		UpdatedAt time.Time `json:"updated_at"`
+		ID              int       `json:"id" binding:"required"`
+		Name            string    `json:"name" binding:"required"`
+		Email           string    `json:"email" binding:"required"`
+		Password        string    `json:"password"`
+		Role            string    `json:"role" binding:"required"`
+		EmailVerifiedAt time.Time `json:"email_verified_at"`
+		UpdatedAt       time.Time `json:"updated_at"`
 	}
 
 	ReturnJwt struct {

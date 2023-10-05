@@ -3,26 +3,29 @@ package constants
 import "errors"
 
 var (
-	BearerTokenHasError = errors.New("bearer token catch error")
-	BearerTokenInvalid  = errors.New("invalid token")
+	BearerTokenHasError = errors.New("Bearer token catch error")
+	BearerTokenInvalid  = errors.New("Invalid token")
 
-	UserNotFound    = errors.New("User Not Found")
-	InvalidPassword = errors.New("Invalid Password")
+	UserNotFound    = errors.New("User not found")
+	InvalidPassword = errors.New("Invalid password")
 
-	ErrorGenerateJwt = errors.New("Error Generate JWT")
-	EmptyGenerateJwt = errors.New("Empty Generate JWT")
+	ErrorGenerateJwt = errors.New("Error generate JWT")
+	EmptyGenerateJwt = errors.New("Empty generate JWT")
 
-	ErrorLoadLocationTime = errors.New("Error Load Location Time")
+	ErrorLoadLocationTime = errors.New("Error load location time")
 
-	DuplicateStoreUser = errors.New("Duplicate Store Data User")
-	ErrorHashPassword  = errors.New("Error Hash Password")
+	DuplicateStoreUser = errors.New("Duplicate store data user")
+	ErrorHashPassword  = errors.New("Error hash password")
 
-	NotFoundDataUser = errors.New("Not Found Data User")
-	FailedUpdateUser = errors.New("Failed Update User")
-	FailedDeleteUser = errors.New("Failed Delete User")
+	NotFoundDataUser = errors.New("Not found data user")
+	FailedUpdateUser = errors.New("Failed update user")
+	FailedDeleteUser = errors.New("Failed delete user")
 
-	FailedChangePassword   = errors.New("Failed Change Password")
-	FailedNotSamePassword  = errors.New("Please Confirm The Same Password")
-	MinimCharacterPassword = errors.New("Minimum Password Is 8 Characters")
-	PasswordSameCurrent    = errors.New("The Password Is The Same As The Current One")
+	FailedChangePassword   = errors.New("Failed change password")
+	FailedNotSamePassword  = errors.New("Please confirm the same password")
+	MinimCharacterPassword = errors.New("Minimum password is 8 characters")
+	PasswordSameCurrent    = errors.New("The password is the same as the current one")
+	ErrorDecodeBase64      = errors.New("Sorry failed to decode base64")
+	FailedVerifyEmail      = errors.New("Sorry failed to verify email")
+	UserNotVerifyEmail     = errors.New("Please verification account simpel!")
 )

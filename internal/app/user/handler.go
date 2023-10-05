@@ -62,6 +62,12 @@ func (h *handler) Login(c *gin.Context) {
 		return
 	}
 
+	if err == constants.UserNotVerifyEmail {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.UserNotVerifyEmail), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
 	if err == constants.EmptyGenerateJwt {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.EmptyGenerateJwt), http.StatusBadRequest, "failed", nil)
 		c.JSON(http.StatusBadRequest, response)
@@ -207,6 +213,24 @@ func (h *handler) UpdateUser(c *gin.Context) {
 
 	response := util.APIResponse("Success Update User", http.StatusOK, "success", nil)
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *handler) VerifyEmail(c *gin.Context) {
+	base64String := c.Param("base_64")
+
+	err := h.service.VerifyEmail(c, base64String)
+
+	if err == constants.NotFoundDataUser {
+		urlRedirect := util.GetEnv("FE_URL", "fallback") + "/auth/error-verify"
+		c.Redirect(http.StatusSeeOther, urlRedirect)
+	}
+
+	if err == constants.FailedDeleteUser {
+		urlRedirect := util.GetEnv("FE_URL", "fallback") + "/auth/error-verify"
+		c.Redirect(http.StatusSeeOther, urlRedirect)
+	}
+	urlRedirect := util.GetEnv("FE_URL", "fallback") + "/auth/success-verify"
+	c.Redirect(http.StatusSeeOther, urlRedirect)
 }
 
 func (h *handler) DeleteUser(c *gin.Context) {
