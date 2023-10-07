@@ -28,4 +28,7 @@ var (
 	ErrorDecodeBase64      = errors.New("Sorry failed to decode base64")
 	FailedVerifyEmail      = errors.New("Sorry failed to verify email")
 	UserNotVerifyEmail     = errors.New("Please verification account simpel!")
+
+	NotFoundDataAppSetting = errors.New("Data app setting not found!")
+	ErrorUpdateAppSetting  = errors.New("Error update app setting")
 )
