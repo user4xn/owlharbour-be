@@ -114,4 +114,14 @@ type (
 		IsMocked int    `json:"is_mocked"`
 		OnGround int    `json:"on_ground"`
 	}
+
+	ShipWebsocketResponse struct {
+		IsUpdate bool   `json:"is_update"`
+		ShipID   int    `json:"ship_id"`
+		ShipName string `json:"ship_name"`
+		DeviceID string `json:"device_id"`
+		Long     string `json:"long"`
+		Lat      string `json:"lat"`
+		OnGround int    `json:"on_ground"`
+	}
 )

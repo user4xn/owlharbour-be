@@ -29,6 +29,9 @@ type Ship interface {
 	ShipDockedLogs(ctx context.Context, ShipID int) ([]dto.DockLogsShip, error)
 	ShipLocationLogs(ctx context.Context, ShipID int) ([]dto.LocationLogsShip, error)
 	ShipAddonDetail(ctx context.Context, ShipID int) (*dto.ShipAddonDetailResponse, error)
+	CountShip(ctx context.Context) (int64, error)
+	LastUpdated(ctx context.Context) (time.Time, error)
+	ShipInBatch(ctx context.Context, start int, end int) (*[]model.Ship, bool, error)
 }
 
 type ship struct {
@@ -67,10 +70,12 @@ func (r *ship) StoreNewShip(ctx context.Context, request dto.PairingRequestRespo
 		return err
 	}
 
-	cacheKey := "ship_list-"
+	cacheKey := []string{"ship_list-", "ship_count"}
 
-	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
-		return nil
+	for i := range cacheKey {
+		if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey[i]); err != nil {
+			return nil
+		}
 	}
 
 	return nil
@@ -279,10 +284,12 @@ func (r *ship) UpdateShip(ctx context.Context, request model.Ship) error {
 		return err
 	}
 
-	cacheKey := "ship_list-"
+	cacheKey := []string{"ship_list-", "ship_last_update"}
 
-	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
-		return nil
+	for i := range cacheKey {
+		if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey[i]); err != nil {
+			return nil
+		}
 	}
 
 	return nil
@@ -425,4 +432,165 @@ func (r *ship) ShipAddonDetail(ctx context.Context, ShipID int) (*dto.ShipAddonD
 	}
 
 	return &res, nil
+}
+
+func (r *ship) CountShip(ctx context.Context) (int64, error) {
+	cacheKey := "ship_count"
+
+	if r.CacheEnabled {
+		cachedData, err := r.RedisClient.Get(ctx, cacheKey).Result()
+		if err == nil {
+			var cachedInfo int64
+			if err := json.Unmarshal([]byte(cachedData), &cachedInfo); err == nil {
+				return cachedInfo, nil
+			}
+		}
+	}
+
+	tx := r.Db.WithContext(ctx).Begin()
+
+	query := tx.Model(&model.Ship{})
+
+	var totalShip int64
+
+	if err := query.Count(&totalShip).Error; err != nil { // Use Count method to count ships
+		tx.Rollback()
+		return 0, err // Return 0 and error in case of failure
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	if r.CacheEnabled {
+		jsonData, err := json.Marshal(totalShip)
+		if err == nil {
+			r.RedisClient.Set(ctx, cacheKey, jsonData, time.Hour)
+		} else {
+			fmt.Println("Error marshalling data for cache:", err)
+		}
+	}
+
+	return totalShip, nil
+}
+
+func (r *ship) LastUpdated(ctx context.Context) (time.Time, error) {
+	cacheKey := "ship_last_update"
+
+	if r.CacheEnabled {
+		cachedData, err := r.RedisClient.Get(ctx, cacheKey).Result()
+		if err == nil {
+			var cachedInfo time.Time
+			if err := json.Unmarshal([]byte(cachedData), &cachedInfo); err == nil {
+				return cachedInfo, nil
+			}
+		}
+	}
+
+	tx := r.Db.WithContext(ctx).Begin()
+
+	var maxUpdatedAt time.Time
+
+	query := tx.Model(&model.Ship{}).Select("MAX(updated_at)").Row()
+	if err := query.Scan(&maxUpdatedAt); err != nil {
+		tx.Rollback()
+		return time.Time{}, err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return time.Time{}, err
+	}
+
+	if r.CacheEnabled {
+		jsonData, err := json.Marshal(maxUpdatedAt)
+		if err == nil {
+			r.RedisClient.Set(ctx, cacheKey, jsonData, time.Hour)
+		} else {
+			fmt.Println("Error marshalling data for cache:", err)
+		}
+	}
+
+	return maxUpdatedAt, nil
+}
+
+func (r *ship) ShipInBatch(ctx context.Context, start int, end int) (*[]model.Ship, bool, error) {
+
+	lastUpdate, err := r.LastUpdated(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+
+	cacheKey := "ship_highest_current_update"
+
+	if r.CacheEnabled {
+		cachedData, err := r.RedisClient.Get(ctx, cacheKey).Result()
+		if err == nil {
+			var cachedInfo time.Time
+			if err := json.Unmarshal([]byte(cachedData), &cachedInfo); err == nil {
+				if lastUpdate != cachedInfo {
+					tx := r.Db.WithContext(ctx).Begin()
+
+					query := tx.Model(&model.Ship{})
+
+					query = query.Where("updated_at BETWEEN ? AND ?", lastUpdate.Add(-10*time.Second), lastUpdate.Add(10*time.Second)).Order("created_at DESC")
+
+					var updatedShips []model.Ship
+
+					if err := query.Find(&updatedShips).Error; err != nil {
+						tx.Rollback()
+						return nil, false, err
+					}
+
+					if err := tx.Commit().Error; err != nil {
+						tx.Rollback()
+						return nil, false, err
+					}
+
+					jsonData, err := json.Marshal(lastUpdate)
+					if err == nil {
+						r.RedisClient.Set(ctx, cacheKey, jsonData, time.Hour)
+					} else {
+						fmt.Println("Error marshalling data for cache:", err)
+					}
+
+					return &updatedShips, true, nil
+				}
+			}
+		} else if err == redis.Nil {
+			jsonData, err := json.Marshal(lastUpdate)
+			if err == nil {
+				r.RedisClient.Set(ctx, cacheKey, jsonData, time.Hour)
+			} else {
+				fmt.Println("Error marshalling data for cache:", err)
+			}
+		}
+	}
+
+	tx := r.Db.WithContext(ctx).Begin()
+
+	query := tx.Model(&model.Ship{})
+
+	// Apply filters if needed
+	if start != 0 && end != 0 {
+		query = query.Offset(start).Limit(end - start + 1)
+	}
+
+	// Add additional filters or sorting as needed
+	query = query.Order("created_at ASC")
+
+	var ships []model.Ship
+
+	if err := query.Find(&ships).Error; err != nil {
+		tx.Rollback()
+		return nil, false, err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, false, err
+	}
+
+	return &ships, false, nil
 }
