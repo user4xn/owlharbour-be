@@ -35,6 +35,19 @@ func (h *handler) GetDataSetting(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (h *handler) GetDataSettingWeb(c *gin.Context) {
+	data, err := h.service.GetSettingWeb(c)
+
+	if err == constants.NotFoundDataAppSetting {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.NotFoundDataAppSetting), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Success get data setting", http.StatusOK, "success", data)
+	c.JSON(http.StatusOK, response)
+}
+
 func (h *handler) Store(c *gin.Context) {
 	var payload dto.PayloadStoreSetting
 	if err := c.ShouldBind(&payload); err != nil {

@@ -9,6 +9,7 @@ import (
 
 type AppGeofence interface {
 	Store(ctx context.Context, data model.AppGeofence) error
+	GetAll(ctx context.Context) ([]model.AppGeofence, error)
 	DeleteAll(ctx context.Context) error
 }
 
@@ -29,6 +30,17 @@ func (r *appgeofence) Store(ctx context.Context, data model.AppGeofence) error {
 	}
 
 	return nil
+}
+
+func (r *appgeofence) GetAll(ctx context.Context) ([]model.AppGeofence, error) {
+	var geofences []model.AppGeofence
+
+	db := r.Db.WithContext(ctx)
+	if err := db.Find(&geofences).Error; err != nil {
+		return nil, err
+	}
+
+	return geofences, nil
 }
 
 func (r *appgeofence) DeleteAll(ctx context.Context) error {

@@ -39,7 +39,7 @@ func (r *appsetting) FindLatest(ctx context.Context, selectedFields string) (mod
 	db := r.Db.WithContext(ctx).Model(model.AppSetting{})
 	db = util.SetSelectFields(db, selectedFields)
 
-	if err := db.Order("created_at desc").Limit(1).Take(&res).Error; err != nil {
+	if err := db.Limit(1).Take(&res).Error; err != nil {
 		return model.AppSetting{}, err
 	}
 
