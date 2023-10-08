@@ -19,7 +19,7 @@ type App interface {
 	GetPolygon(ctx context.Context) ([]dto.HarbourGeofences, error)
 	StoreSetting(ctx context.Context, data model.AppSetting) error
 	FindLatestSetting(ctx context.Context, selectedFields string) (model.AppSetting, error)
-	UpdateSetting(ctx context.Context, updatedModels *model.AppSetting, updatedField string, query string, args ...interface{}) error
+	UpsertSetting(ctx context.Context, updatedModels *model.AppSetting, updatedField string, query string, args ...interface{}) error
 	StoreGeofence(ctx context.Context, data model.AppGeofence) error
 	DeleteAllGeofence(ctx context.Context) error
 }
@@ -164,17 +164,26 @@ func (r *app) FindLatestSetting(ctx context.Context, selectedFields string) (mod
 	return res, nil
 }
 
-func (r *app) UpdateSetting(ctx context.Context, updatedModels *model.AppSetting, updatedField string, query string, args ...interface{}) error {
+func (r *app) UpsertSetting(ctx context.Context, updatedModels *model.AppSetting, updatedField string, query string, args ...interface{}) error {
 	setting := r.Db.WithContext(ctx).Model(&model.AppSetting{})
-
-	if err := util.SetSelectFields(setting, updatedField).Where(query, args...).Updates(updatedModels).Error; err != nil {
+	cacheKey := "app_info"
+	var count int64
+	if err := r.Db.WithContext(ctx).Model(&model.AppSetting{}).Where(query, args...).Count(&count).Error; err != nil {
 		return err
 	}
 
-	cacheKey := "app_info"
+	if count > 0 {
+		if err := util.SetSelectFields(setting, updatedField).Where(query, args...).Updates(updatedModels).Error; err != nil {
+			return err
+		}
+	} else {
+		if err := r.Db.WithContext(ctx).Create(updatedModels).Error; err != nil {
+			return err
+		}
+	}
 
 	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
-		return nil
+		return err
 	}
 
 	return nil
