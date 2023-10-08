@@ -30,6 +30,7 @@ type Ship interface {
 	ShipLocationLogs(ctx context.Context, ShipID int) ([]dto.LocationLogsShip, error)
 	ShipAddonDetail(ctx context.Context, ShipID int) (*dto.ShipAddonDetailResponse, error)
 	CountShip(ctx context.Context) (int64, error)
+	CountStatistic(ctx context.Context) ([]int64, error)
 	LastUpdated(ctx context.Context) (time.Time, error)
 	ShipInBatch(ctx context.Context, start int, end int) (*[]model.Ship, bool, error)
 }
@@ -230,6 +231,12 @@ func (r *ship) StoreDockedLog(ctx context.Context, request dto.ShipDockedLogStor
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	cacheKey := "ship_statistic_count"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
+		return nil
 	}
 
 	return nil
@@ -473,6 +480,57 @@ func (r *ship) CountShip(ctx context.Context) (int64, error) {
 	}
 
 	return totalShip, nil
+}
+
+func (r *ship) CountStatistic(ctx context.Context) ([]int64, error) {
+	cacheKey := "ship_statistic_count"
+
+	if r.CacheEnabled {
+		cachedData, err := r.RedisClient.Get(ctx, cacheKey).Result()
+		if err == nil {
+			var cachedInfo []int64
+			if err := json.Unmarshal([]byte(cachedData), &cachedInfo); err == nil {
+				return cachedInfo, nil
+			}
+		}
+	}
+
+	tx := r.Db.WithContext(ctx).Begin()
+
+	var totalCheckin int64
+	if err := tx.Model(&model.ShipDockedLog{}).Where("status = ?", "checkin").Count(&totalCheckin).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	var totalCheckout int64
+	if err := tx.Model(&model.ShipDockedLog{}).Where("status = ?", "checkout").Count(&totalCheckout).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	var totalFraud int64
+	if err := tx.Model(&model.ShipLocationLog{}).Where("is_mocked = ?", 1).Count(&totalFraud).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	// Cache the result in Redis
+	if r.CacheEnabled {
+		jsonData, err := json.Marshal([]int64{totalCheckin, totalCheckout, totalFraud})
+		if err == nil {
+			r.RedisClient.Set(ctx, cacheKey, jsonData, time.Hour)
+		} else {
+			fmt.Println("Error marshalling data for cache:", err)
+		}
+	}
+
+	return []int64{totalCheckin, totalCheckout, totalFraud}, nil
 }
 
 func (r *ship) LastUpdated(ctx context.Context) (time.Time, error) {

@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"net/http"
+	"simpel-api/internal/middleware"
 	"simpel-api/pkg/util"
 
 	"github.com/gin-gonic/gin"
@@ -23,4 +24,7 @@ func (h *handler) Router(g *gin.RouterGroup) {
 		// Upgrade to WebSocket connection and handle it in your handler function
 		h.shipMonitorWebsocket(c)
 	})
+
+	g.Use(middleware.Authenticate())
+	g.GET("/statistic", h.harbourStatistic)
 }

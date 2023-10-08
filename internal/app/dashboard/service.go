@@ -16,6 +16,7 @@ type service struct {
 type Service interface {
 	CountShip(ctx context.Context) (int64, error)
 	GetShipsInBatch(ctx context.Context, start int, end int) ([]dto.ShipWebsocketResponse, error)
+	GetStatistic(ctx context.Context) (*dto.DashboardStatisticResponse, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -54,4 +55,25 @@ func (s *service) GetShipsInBatch(ctx context.Context, start int, end int) ([]dt
 	}
 
 	return data, nil
+}
+
+func (s *service) GetStatistic(ctx context.Context) (*dto.DashboardStatisticResponse, error) {
+	countShip, err := s.shipRepository.CountShip(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	countStatistic, err := s.shipRepository.CountStatistic(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := dto.DashboardStatisticResponse{
+		TotalShip:     int(countShip),
+		TotalCheckin:  int(countStatistic[0]),
+		TotalCheckout: int(countStatistic[1]),
+		TotalFraud:    int(countStatistic[2]),
+	}
+
+	return &res, nil
 }

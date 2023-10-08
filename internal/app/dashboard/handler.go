@@ -90,3 +90,17 @@ func (h *handler) shipMonitorWebsocket(c *gin.Context) {
 		}
 	}
 }
+
+func (h *handler) harbourStatistic(c *gin.Context) {
+	ctx := c.Request.Context()
+	
+	data, err := h.service.GetStatistic(ctx)
+	if err != nil {
+		response := util.APIResponse(err.Error(), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Success get data statistic", http.StatusOK, "success", data)
+	c.JSON(http.StatusOK, response)
+}
