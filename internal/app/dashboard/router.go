@@ -6,6 +6,5 @@ import (
 
 // This function accepts gin.Routergroup to define a group route
 func (h *handler) Router(g *gin.RouterGroup) {
-	// g.Use(middleware.FucntionName())
-	// g.GET("/", h.FunctionName)
+	g.GET("/ship-monitor/websocket", h.shipMonitorWebsocket)
 }

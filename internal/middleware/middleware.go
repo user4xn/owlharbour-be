@@ -16,6 +16,7 @@ import (
 func Authenticate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header["Authorization"]
+
 		if len(header) == 0 {
 			response := util.APIResponse("Sorry, you didn't enter a valid bearer token", http.StatusUnauthorized, "failed", nil)
 			c.JSON(http.StatusUnauthorized, response)
