@@ -118,7 +118,7 @@ func (r *user) Store(ctx context.Context, data model.User) error {
 		return err
 	}
 
-	cacheKey := "user_list-"
+	cacheKey := "user_list-*"
 
 	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
 		return nil
@@ -165,7 +165,7 @@ func (r *user) UpdateOne(ctx context.Context, updatedModels *dto.PayloadUpdateUs
 		return err
 	}
 
-	cacheKey := "user_list-"
+	cacheKey := "user_list-*"
 
 	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
 		return nil
@@ -181,7 +181,7 @@ func (r *user) DeleteOne(ctx context.Context, query string, args ...interface{})
 		return err
 	}
 
-	cacheKey := "user_list-"
+	cacheKey := "user_list-*"
 
 	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
 		return nil

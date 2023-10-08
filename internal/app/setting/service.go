@@ -10,8 +10,7 @@ import (
 )
 
 type service struct {
-	AppSettingRepository  repository.AppSetting
-	AppGeofenceRepository repository.AppGeofence
+	AppRepository repository.App
 }
 
 type Service interface {
@@ -22,13 +21,12 @@ type Service interface {
 
 func NewService(f *factory.Factory) Service {
 	return &service{
-		AppSettingRepository:  f.AppSettingRepository,
-		AppGeofenceRepository: f.AppGeofenceRepository,
+		AppRepository: f.AppRepository,
 	}
 }
 
 func (s *service) GetSetting(ctx context.Context) (dto.GetDataSetting, error) {
-	appsetting, err := s.AppSettingRepository.FindLatest(ctx, "harbour_code, harbour_name, mode, apk_min_version, interval, range, apk_download_link")
+	appsetting, err := s.AppRepository.FindLatestSetting(ctx, "harbour_code, harbour_name, mode, apk_min_version, interval, range, apk_download_link")
 	if err != nil {
 		return dto.GetDataSetting{}, constants.NotFoundDataAppSetting
 	}
@@ -47,12 +45,12 @@ func (s *service) GetSetting(ctx context.Context) (dto.GetDataSetting, error) {
 }
 
 func (s *service) GetSettingWeb(ctx context.Context) (dto.GetDataSettingWeb, error) {
-	appsetting, err := s.AppSettingRepository.FindLatest(ctx, "harbour_code, harbour_name, mode, apk_min_version, interval, range, apk_download_link")
+	appsetting, err := s.AppRepository.FindLatestSetting(ctx, "harbour_code, harbour_name, mode, apk_min_version, interval, range, apk_download_link")
 	if err != nil {
 		return dto.GetDataSettingWeb{}, err
 	}
 
-	getGeofance, err := s.AppGeofenceRepository.GetAll(ctx)
+	getGeofance, err := s.AppRepository.GetPolygon(ctx)
 	if err != nil {
 		data := dto.GetDataSettingWeb{
 			HarbourCode:     appsetting.HarbourCode,
@@ -62,18 +60,18 @@ func (s *service) GetSettingWeb(ctx context.Context) (dto.GetDataSettingWeb, err
 			Interval:        appsetting.Interval,
 			Range:           appsetting.Range,
 			ApkDownloadLink: appsetting.ApkDownloadLink,
-			Geofances:       nil,
+			Geofences:       nil,
 		}
 		return data, nil
 	}
 
-	geofances := []dto.GetGeofance{}
+	geofences := []dto.AppGeofence{}
 	for _, gf := range getGeofance {
-		dataGeofance := dto.GetGeofance{
+		dataGeofance := dto.AppGeofence{
 			Long: gf.Long,
 			Lat:  gf.Lat,
 		}
-		geofances = append(geofances, dataGeofance)
+		geofences = append(geofences, dataGeofance)
 	}
 	data := dto.GetDataSettingWeb{
 		HarbourCode:     appsetting.HarbourCode,
@@ -83,14 +81,14 @@ func (s *service) GetSettingWeb(ctx context.Context) (dto.GetDataSettingWeb, err
 		Interval:        appsetting.Interval,
 		Range:           appsetting.Range,
 		ApkDownloadLink: appsetting.ApkDownloadLink,
-		Geofances:       geofances,
+		Geofences:       geofences,
 	}
 
 	return data, nil
 }
 
 func (s *service) CreateOrUpdate(ctx context.Context, payload dto.PayloadStoreSetting) error {
-	appsetting, err := s.AppSettingRepository.FindLatest(ctx, "id")
+	appsetting, err := s.AppRepository.FindLatestSetting(ctx, "id")
 
 	if err != nil {
 		dataStore := model.AppSetting{
@@ -103,7 +101,7 @@ func (s *service) CreateOrUpdate(ctx context.Context, payload dto.PayloadStoreSe
 			ApkDownloadLink: payload.ApkDownloadLink,
 		}
 
-		s.AppSettingRepository.Store(ctx, dataStore)
+		s.AppRepository.StoreSetting(ctx, dataStore)
 	} else {
 		update := model.AppSetting{
 			HarbourCode:     payload.HarbourCode,
@@ -115,21 +113,21 @@ func (s *service) CreateOrUpdate(ctx context.Context, payload dto.PayloadStoreSe
 			ApkDownloadLink: payload.ApkDownloadLink,
 		}
 
-		err = s.AppSettingRepository.Update(ctx, &update, "harbour_code,harbour_name,mode,apk_min_version,interval,range,apk_download_link,updated_at", "harbour_code = ?", appsetting.HarbourCode)
+		err = s.AppRepository.UpdateSetting(ctx, &update, "harbour_code,harbour_name,mode,apk_min_version,interval,range,apk_download_link,updated_at", "harbour_code = ?", appsetting.HarbourCode)
 		if err != nil {
 			return constants.ErrorUpdateAppSetting
 		}
 	}
 
 	if payload.Geofence != nil {
-		s.AppGeofenceRepository.DeleteAll(ctx)
+		s.AppRepository.DeleteAllGeofence(ctx)
 		for _, geofence := range payload.Geofence {
 			store := model.AppGeofence{
 				Long: geofence.Lat,
 				Lat:  geofence.Lat,
 			}
 
-			s.AppGeofenceRepository.Store(ctx, store)
+			s.AppRepository.StoreGeofence(ctx, store)
 		}
 	}
 

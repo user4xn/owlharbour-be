@@ -70,7 +70,7 @@ func (r *ship) StoreNewShip(ctx context.Context, request dto.PairingRequestRespo
 		return err
 	}
 
-	cacheKey := []string{"ship_list-", "ship_count"}
+	cacheKey := []string{"ship_list-*", "ship_count"}
 
 	for i := range cacheKey {
 		if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey[i]); err != nil {
@@ -284,7 +284,7 @@ func (r *ship) UpdateShip(ctx context.Context, request model.Ship) error {
 		return err
 	}
 
-	cacheKey := []string{"ship_list-", "ship_last_update"}
+	cacheKey := []string{"ship_list-*", "ship_last_update"}
 
 	for i := range cacheKey {
 		if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey[i]); err != nil {
