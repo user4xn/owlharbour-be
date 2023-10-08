@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"simpel-api/internal/dto"
 	"simpel-api/internal/model"
+	"simpel-api/pkg/helper"
+	"simpel-api/pkg/util"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -15,6 +17,11 @@ import (
 type App interface {
 	AppInfo(ctx context.Context) (*dto.AppInfo, error)
 	GetPolygon(ctx context.Context) ([]dto.HarbourGeofences, error)
+	StoreSetting(ctx context.Context, data model.AppSetting) error
+	FindLatestSetting(ctx context.Context, selectedFields string) (model.AppSetting, error)
+	UpdateSetting(ctx context.Context, updatedModels *model.AppSetting, updatedField string, query string, args ...interface{}) error
+	StoreGeofence(ctx context.Context, data model.AppGeofence) error
+	DeleteAllGeofence(ctx context.Context) error
 }
 
 type app struct {
@@ -127,4 +134,73 @@ func (r *app) GetPolygon(ctx context.Context) ([]dto.HarbourGeofences, error) {
 	}
 
 	return polygon, nil
+}
+
+func (r *app) StoreSetting(ctx context.Context, data model.AppSetting) error {
+	tx := r.Db.WithContext(ctx)
+	if err := tx.Model(model.AppSetting{}).Create(&data).Error; err != nil {
+		return err
+	}
+
+	cacheKey := "app_info"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
+		return nil
+	}
+
+	return nil
+}
+
+func (r *app) FindLatestSetting(ctx context.Context, selectedFields string) (model.AppSetting, error) {
+	var res model.AppSetting
+
+	query := r.Db.WithContext(ctx).Model(model.AppSetting{})
+	query = util.SetSelectFields(query, selectedFields)
+
+	if err := query.Limit(1).Take(&res).Error; err != nil {
+		return model.AppSetting{}, err
+	}
+
+	return res, nil
+}
+
+func (r *app) UpdateSetting(ctx context.Context, updatedModels *model.AppSetting, updatedField string, query string, args ...interface{}) error {
+	setting := r.Db.WithContext(ctx).Model(&model.AppSetting{})
+
+	if err := util.SetSelectFields(setting, updatedField).Where(query, args...).Updates(updatedModels).Error; err != nil {
+		return err
+	}
+
+	cacheKey := "app_info"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
+		return nil
+	}
+
+	return nil
+}
+
+func (r *app) StoreGeofence(ctx context.Context, data model.AppGeofence) error {
+	tx := r.Db.WithContext(ctx)
+	if err := tx.Model(model.AppGeofence{}).Create(&data).Error; err != nil {
+		return err
+	}
+
+	cacheKey := "app_polygon"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
+		return nil
+	}
+
+	return nil
+}
+
+func (r *app) DeleteAllGeofence(ctx context.Context) error {
+	db := r.Db.WithContext(ctx)
+
+	if err := db.Exec("DELETE FROM app_geofences").Error; err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -49,8 +49,7 @@ func (s *service) GetShipsInBatch(ctx context.Context, start int, end int) ([]dt
 			ShipName: e.Name,
 			DeviceID: e.DeviceID,
 			OnGround: e.OnGround,
-			Lat:      e.CurrentLat,
-			Long:     e.CurrentLong,
+			Geo:      []string{e.CurrentLong, e.CurrentLat},
 		})
 	}
 

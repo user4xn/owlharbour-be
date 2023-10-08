@@ -12,7 +12,7 @@ func DeleteRedisKeysByPattern(client *redis.Client, pattern string) error {
 	var keys []string
 	for {
 		var err error
-		keys, cursor, err = client.Scan(context.Background(), cursor, pattern+"*", 10).Result()
+		keys, cursor, err = client.Scan(context.Background(), cursor, pattern, 10).Result()
 		if err != nil {
 			return err
 		}

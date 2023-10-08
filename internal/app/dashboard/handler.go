@@ -34,6 +34,7 @@ func (h *handler) shipMonitorWebsocket(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade connection to WebSocket"})
 		return
 	}
+
 	defer conn.Close()
 
 	batchSize := 10
@@ -69,8 +70,6 @@ func (h *handler) shipMonitorWebsocket(c *gin.Context) {
 			if end > int(totalShips) {
 				end = int(totalShips)
 			}
-
-			// log.Logging("Batch: %s | Start-End: %s | Rate: %s", batch, []int{start, end}, rate).Info()
 
 			ships, err := h.service.GetShipsInBatch(ctx, start, end)
 			if err != nil {
