@@ -86,10 +86,8 @@ func (s *service) GetSettingWeb(ctx context.Context) (dto.GetDataSettingWeb, err
 
 	return data, nil
 }
-
 func (s *service) CreateOrUpdate(ctx context.Context, payload dto.PayloadStoreSetting) error {
-	appsetting, err := s.AppRepository.FindLatestSetting(ctx, "id")
-
+	appsetting, err := s.AppRepository.FindLatestSetting(ctx, "harbour_code")
 	if err != nil {
 		dataStore := model.AppSetting{
 			HarbourCode:     payload.HarbourCode,
@@ -113,17 +111,14 @@ func (s *service) CreateOrUpdate(ctx context.Context, payload dto.PayloadStoreSe
 			ApkDownloadLink: payload.ApkDownloadLink,
 		}
 
-		err = s.AppRepository.UpdateSetting(ctx, &update, "harbour_code,harbour_name,mode,apk_min_version,interval,range,apk_download_link,updated_at", "harbour_code = ?", appsetting.HarbourCode)
-		if err != nil {
-			return constants.ErrorUpdateAppSetting
-		}
+		s.AppRepository.UpsertSetting(ctx, &update, "harbour_code,harbour_name,mode,apk_min_version,interval,range,apk_download_link,updated_at", "harbour_code = ?", appsetting.HarbourCode)
 	}
 
 	if payload.Geofence != nil {
 		s.AppRepository.DeleteAllGeofence(ctx)
 		for _, geofence := range payload.Geofence {
 			store := model.AppGeofence{
-				Long: geofence.Lat,
+				Long: geofence.Long,
 				Lat:  geofence.Lat,
 			}
 
