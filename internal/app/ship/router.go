@@ -9,6 +9,7 @@ import (
 func (h *handler) Router(g *gin.RouterGroup) {
 	g.POST("/pairing", h.PairingShip)
 	g.GET("/pairing/detail/:device_id", h.PairingDetailByDevice)
+	g.GET("/by-device/:device_id", h.ShipByDevice)
 	g.POST("/record-log", h.RecordLog)
 
 	g.Use(middleware.Authenticate())
@@ -16,7 +17,6 @@ func (h *handler) Router(g *gin.RouterGroup) {
 	g.PUT("/pairing/action", h.PairingAction)
 
 	g.GET("/list", h.ShipList)
-	g.GET("/by-device/:device_id", h.ShipByDevice)
 	g.GET("/detail/:ship_id", h.ShipDetail)
 	g.PUT("/update-detail", h.UpdateShipDetail)
 }
