@@ -5,6 +5,7 @@ import (
 	"simpel-api/internal/factory"
 	"simpel-api/pkg/log"
 	"simpel-api/pkg/util"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,7 +38,14 @@ func (h *handler) shipMonitorWebsocket(c *gin.Context) {
 
 	defer conn.Close()
 
-	batchSize := 10
+	batchEnv := util.GetEnv("WEBSOCKET_BATCH_SIZE", "30")
+	batchSize, err := strconv.Atoi(batchEnv)
+	if err != nil {
+		response := util.APIResponse("failed to convert integer: "+err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
 	totalShips, err := h.service.CountShip(ctx)
 	if err != nil {
 		response := util.APIResponse("failed to get count ship: "+err.Error(), http.StatusInternalServerError, "failed", nil)
@@ -70,15 +78,30 @@ func (h *handler) shipMonitorWebsocket(c *gin.Context) {
 			if end > int(totalShips) {
 				end = int(totalShips)
 			}
-
+			log.Logging("Fetching ships | %s | %s |", start, end).Info()
 			ships, err := h.service.GetShipsInBatch(ctx, start, end)
 			if err != nil {
-				break
+				log.Logging("Error fetching ships %s - %s, Err: %s", start, end, err.Error()).Error()
+
+				conn.Close()
+				conn, err = upgrader.Upgrade(c.Writer, c.Request, nil)
+				if err != nil {
+					log.Logging("Failed to reconnect to WebSocket, Err: %s", err.Error()).Error()
+					return
+				}
+				continue
 			}
 
 			if err := conn.WriteJSON(ships); err != nil {
-				log.Logging("Error sent ships %s - %s, Err: %s", start, end, err.Error()).Error()
-				break
+				log.Logging("Error sending ships %s - %s, Err: %s", start, end, err.Error()).Error()
+
+				conn.Close()
+				conn, err = upgrader.Upgrade(c.Writer, c.Request, nil)
+				if err != nil {
+					log.Logging("Failed to reconnect to WebSocket, Err: %s", err.Error()).Error()
+					return
+				}
+				continue
 			}
 
 			time.Sleep(rate)
@@ -93,7 +116,7 @@ func (h *handler) shipMonitorWebsocket(c *gin.Context) {
 
 func (h *handler) harbourStatistic(c *gin.Context) {
 	ctx := c.Request.Context()
-	
+
 	data, err := h.service.GetStatistic(ctx)
 	if err != nil {
 		response := util.APIResponse(err.Error(), http.StatusBadRequest, "failed", nil)

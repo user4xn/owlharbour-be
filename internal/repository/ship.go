@@ -460,9 +460,9 @@ func (r *ship) CountShip(ctx context.Context) (int64, error) {
 
 	var totalShip int64
 
-	if err := query.Count(&totalShip).Error; err != nil { // Use Count method to count ships
+	if err := query.Count(&totalShip).Error; err != nil {
 		tx.Rollback()
-		return 0, err // Return 0 and error in case of failure
+		return 0, err
 	}
 
 	if err := tx.Commit().Error; err != nil {
@@ -628,15 +628,7 @@ func (r *ship) ShipInBatch(ctx context.Context, start int, end int) (*[]model.Sh
 
 	tx := r.Db.WithContext(ctx).Begin()
 
-	query := tx.Model(&model.Ship{})
-
-	// Apply filters if needed
-	if start != 0 && end != 0 {
-		query = query.Offset(start).Limit(end - start + 1)
-	}
-
-	// Add additional filters or sorting as needed
-	query = query.Order("created_at ASC")
+	query := tx.Model(&model.Ship{}).Offset(start).Limit(end - start).Order("created_at ASC")
 
 	var ships []model.Ship
 
