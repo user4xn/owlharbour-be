@@ -34,6 +34,7 @@ type Ship interface {
 	LastUpdated(ctx context.Context) (time.Time, error)
 	ShipInBatch(ctx context.Context, start int, end int) (*[]model.Ship, bool, error)
 	ReportShipDocking(ctx context.Context, request dto.ReportShipDockedParam) ([]dto.ReportShipDockingResponse, error)
+	ReportShipLocation(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error)
 }
 
 type ship struct {
@@ -681,7 +682,7 @@ func (r *ship) ReportShipDocking(ctx context.Context, request dto.ReportShipDock
 		searchLower := strings.ToLower(request.Search)
 		query = query.Where("lower(ships.name) LIKE ?", "%"+searchLower+"%")
 	}
-	
+
 	if request.StartDate != "" && request.EndDate != "" {
 		query = query.Where("DATE(ship_docked_logs.created_at) BETWEEN ? AND ?", request.StartDate, request.EndDate)
 	}
@@ -722,6 +723,55 @@ func (r *ship) ReportShipDocking(ctx context.Context, request dto.ReportShipDock
 		} else {
 			fmt.Println("Error marshalling data for cache:", err)
 		}
+	}
+
+	return shipDock, nil
+}
+
+func (r *ship) ReportShipLocation(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error) {
+	tx := r.Db.WithContext(ctx).Begin()
+
+	query := tx.Model(&model.ShipLocationLog{}).
+		Select("ship_location_logs.*, ships.name as ship_name").
+		Joins("JOIN ships ON ship_location_logs.ship_id = ships.id")
+
+	if request.Search != "" {
+		searchLower := strings.ToLower(request.Search)
+		query = query.Where("lower(ships.name) LIKE ?", "%"+searchLower+"%")
+	}
+
+	if request.StartDate != "" && request.EndDate != "" {
+		query = query.Where("DATE(ship_location_logs.created_at) BETWEEN ? AND ?", request.StartDate, request.EndDate)
+	}
+
+	query = query.Limit(request.Limit).Offset(request.Offset).Order("ship_location_logs.created_at DESC")
+
+	var result []struct {
+		model.ShipLocationLog
+		ShipName string `json:"ship_name"`
+	}
+
+	if err := query.Find(&result).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	var shipDock []dto.ReportShipLocationResponse
+	for _, e := range result {
+		shipDock = append(shipDock, dto.ReportShipLocationResponse{
+			LogID:    e.ID,
+			ShipName: e.ShipName,
+			Lat:      e.Lat,
+			Long:     e.Long,
+			IsMocked: e.IsMocked,
+			OnGround: e.OnGround,
+			LogDate:  e.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
 	}
 
 	return shipDock, nil

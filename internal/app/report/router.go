@@ -10,4 +10,5 @@ import (
 func (h *handler) Router(g *gin.RouterGroup) {
 	g.Use(middleware.Authenticate())
 	g.GET("/ship-docking", h.ShipDocking)
+	g.GET("/ship-location", h.ShipLocation)
 }

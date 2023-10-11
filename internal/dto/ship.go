@@ -16,6 +16,13 @@ type (
 		StartDate string   `json:"start_date"`
 		EndDate   string   `json:"end_date"`
 	}
+	ReportShipLocationParam struct {
+		Offset    int    `json:"offset"`
+		Limit     int    `json:"limit"`
+		Search    string `json:"search"`
+		StartDate string `json:"start_date"`
+		EndDate   string `json:"end_date"`
+	}
 
 	ReportShipDockingResponse struct {
 		LogID    int    `json:"log_id"`
@@ -24,6 +31,16 @@ type (
 		Long     string `json:"long"`
 		Lat      string `json:"lat"`
 		Status   string `json:"status"`
+	}
+
+	ReportShipLocationResponse struct {
+		LogID    int    `json:"log_id"`
+		LogDate  string `json:"log_date"`
+		ShipName string `json:"ship_name"`
+		Long     string `json:"long"`
+		Lat      string `json:"lat"`
+		IsMocked int    `json:"is_mocked"`
+		OnGround int    `json:"on_ground"`
 	}
 
 	ShipResponse struct {
