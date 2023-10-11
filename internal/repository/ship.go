@@ -33,6 +33,7 @@ type Ship interface {
 	CountStatistic(ctx context.Context) ([]int64, error)
 	LastUpdated(ctx context.Context) (time.Time, error)
 	ShipInBatch(ctx context.Context, start int, end int) (*[]model.Ship, bool, error)
+	ReportShipDocking(ctx context.Context, request dto.ReportShipDockedParam) ([]dto.ReportShipDockingResponse, error)
 }
 
 type ship struct {
@@ -574,7 +575,6 @@ func (r *ship) LastUpdated(ctx context.Context) (time.Time, error) {
 }
 
 func (r *ship) ShipInBatch(ctx context.Context, start int, end int) (*[]model.Ship, bool, error) {
-
 	lastUpdate, err := r.LastUpdated(ctx)
 	if err != nil {
 		return nil, false, err
@@ -643,4 +643,86 @@ func (r *ship) ShipInBatch(ctx context.Context, start int, end int) (*[]model.Sh
 	}
 
 	return &ships, false, nil
+}
+
+func (r *ship) ReportShipDocking(ctx context.Context, request dto.ReportShipDockedParam) ([]dto.ReportShipDockingResponse, error) {
+	paramJSON, err := json.Marshal(request)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, err
+	}
+
+	hash := sha1.Sum(paramJSON)
+	uniqueString := fmt.Sprintf("%x", hash)
+
+	cacheKey := "report_ship_list-" + uniqueString
+
+	// if r.CacheEnabled {
+	// 	cachedData, err := r.RedisClient.Get(ctx, cacheKey).Result()
+	// 	if err == nil {
+	// 		var cachedInfo []dto.ReportShipDockingResponse
+	// 		if err := json.Unmarshal([]byte(cachedData), &cachedInfo); err == nil {
+	// 			return cachedInfo, nil
+	// 		}
+	// 	}
+	// }
+
+	tx := r.Db.WithContext(ctx).Begin()
+
+	query := tx.Model(&model.ShipDockedLog{}).
+		Select("ship_docked_logs.*, ships.name as ship_name").
+		Joins("JOIN ships ON ship_docked_logs.ship_id = ships.id")
+
+	if request.LogType != nil && request.LogType[0] != "" && len(request.LogType) > 0 {
+		query = query.Where("ship_docked_logs.status IN (?)", request.LogType)
+	}
+
+	if request.Search != "" {
+		searchLower := strings.ToLower(request.Search)
+		query = query.Where("lower(ships.name) LIKE ?", "%"+searchLower+"%")
+	}
+	
+	if request.StartDate != "" && request.EndDate != "" {
+		query = query.Where("DATE(ship_docked_logs.created_at) BETWEEN ? AND ?", request.StartDate, request.EndDate)
+	}
+
+	query = query.Limit(request.Limit).Offset(request.Offset).Order("ship_docked_logs.created_at DESC")
+
+	var result []struct {
+		model.ShipDockedLog
+		ShipName string `json:"ship_name"`
+	}
+
+	if err := query.Find(&result).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	var shipDock []dto.ReportShipDockingResponse
+	for _, e := range result {
+		shipDock = append(shipDock, dto.ReportShipDockingResponse{
+			LogID:    e.ID,
+			ShipName: e.ShipName,
+			Lat:      e.Lat,
+			Long:     e.Long,
+			Status:   string(e.Status),
+			LogDate:  e.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if r.CacheEnabled {
+		jsonData, err := json.Marshal(shipDock)
+		if err == nil {
+			r.RedisClient.Set(ctx, cacheKey, jsonData, time.Hour)
+		} else {
+			fmt.Println("Error marshalling data for cache:", err)
+		}
+	}
+
+	return shipDock, nil
 }
