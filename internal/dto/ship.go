@@ -54,19 +54,20 @@ type (
 	}
 
 	ShipMobileDetailResponse struct {
-		ID              int    `json:"id"`
-		ShipName        string `json:"ship_name"`
-		ResponsibleName string `json:"responsible_name"`
-		DeviceID        string `json:"device_id"`
-		CurrentLong     string `json:"current_long"`
-		CurrentLat      string `json:"current_lat"`
-		FirebaseToken   string `json:"firebase_token"`
-		Status          string `json:"status"`
-		OnGround        int    `json:"on_ground"`
-		CreatedAt       string `json:"created_at"`
-		HitMode         string `json:"hit_mode"`
-		Range           int    `json:"range"`
-		Interval        int    `json:"interval"`
+		ID              int            `json:"id"`
+		ShipName        string         `json:"ship_name"`
+		ResponsibleName string         `json:"responsible_name"`
+		DeviceID        string         `json:"device_id"`
+		CurrentLong     string         `json:"current_long"`
+		CurrentLat      string         `json:"current_lat"`
+		FirebaseToken   string         `json:"firebase_token"`
+		Status          string         `json:"status"`
+		OnGround        int            `json:"on_ground"`
+		CreatedAt       string         `json:"created_at"`
+		HitMode         string         `json:"hit_mode"`
+		Range           int            `json:"range"`
+		Interval        int            `json:"interval"`
+		DockingLogs     []DockLogsShip `json:"docking_logs"`
 	}
 
 	ShipDetailResponse struct {

@@ -145,6 +145,11 @@ func (s *service) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipM
 		return nil, err
 	}
 
+	dockedLogs, err := s.shipRepository.ShipDockedLogs(ctx, ship.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &dto.ShipMobileDetailResponse{
 		ID:              ship.ID,
 		ShipName:        ship.ShipName,
@@ -159,6 +164,7 @@ func (s *service) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipM
 		HitMode:         appInfo.Mode,
 		Range:           appInfo.Range,
 		Interval:        appInfo.Interval,
+		DockingLogs:     dockedLogs,
 	}
 
 	return res, nil

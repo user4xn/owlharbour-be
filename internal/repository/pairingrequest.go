@@ -205,7 +205,7 @@ func (r *pairingRequest) PairingDetailByDevice(ctx context.Context, DeviceID str
 	tx := r.Db.WithContext(ctx).Begin()
 
 	var pairing model.PairingRequest
-	err := tx.Where("device_id = ?", DeviceID).First(&pairing).Order("created_at DESC").Error
+	err := tx.Where("device_id = ?", DeviceID).Order("created_at DESC").First(&pairing).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, err
