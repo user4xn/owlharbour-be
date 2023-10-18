@@ -257,10 +257,7 @@ func (s *service) RecordLocationShip(ctx context.Context, request dto.ShipRecord
 			status = "checkin"
 		}
 	} else {
-		lastLogs, err := s.shipRepository.GetLastDockedLog(ctx, ship.ID)
-		if err != nil {
-			return err
-		}
+		lastLogs, _ := s.shipRepository.GetLastDockedLog(ctx, ship.ID)
 
 		if lastLogs != nil && lastLogs.Status == "checkin" {
 			if ship.OnGround != 1 {
