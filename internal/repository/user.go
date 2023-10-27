@@ -22,7 +22,9 @@ type User interface {
 	Store(ctx context.Context, data model.User) error
 	FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.User, error)
 	UpdateOne(ctx context.Context, updatedModels *dto.PayloadUpdateUser, updatedField string, query string, args ...interface{}) error
+	UpdateJwtToken(ctx context.Context, updatedModels *dto.PayloadUpdateJwtToken, updatedField string, query string, args ...interface{}) error
 	DeleteOne(ctx context.Context, query string, args ...interface{}) error
+	RemoveJwtToken(ctx context.Context, updatedModels *dto.PayloadUpdateJwtToken, updatedField string, query string, args ...interface{}) error
 }
 
 type user struct {
@@ -159,6 +161,38 @@ func (r *user) Find(ctx context.Context, queries []string, argsSlice ...[]interf
 }
 
 func (r *user) UpdateOne(ctx context.Context, updatedModels *dto.PayloadUpdateUser, updatedField string, query string, args ...interface{}) error {
+	fmt.Println(updatedModels)
+	modelDb := r.Db.WithContext(ctx).Model(&model.User{})
+	if err := util.SetSelectFields(modelDb, updatedField).Where(query, args...).Updates(updatedModels).Error; err != nil {
+		return err
+	}
+
+	cacheKey := "user_list-*"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
+		return nil
+	}
+
+	return nil
+}
+
+func (r *user) UpdateJwtToken(ctx context.Context, updatedModels *dto.PayloadUpdateJwtToken, updatedField string, query string, args ...interface{}) error {
+	fmt.Println(updatedModels)
+	modelDb := r.Db.WithContext(ctx).Model(&model.User{})
+	if err := util.SetSelectFields(modelDb, updatedField).Where(query, args...).Updates(updatedModels).Error; err != nil {
+		return err
+	}
+
+	cacheKey := "user_list-*"
+
+	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
+		return nil
+	}
+
+	return nil
+}
+
+func (r *user) RemoveJwtToken(ctx context.Context, updatedModels *dto.PayloadUpdateJwtToken, updatedField string, query string, args ...interface{}) error {
 	fmt.Println(updatedModels)
 	modelDb := r.Db.WithContext(ctx).Model(&model.User{})
 	if err := util.SetSelectFields(modelDb, updatedField).Where(query, args...).Updates(updatedModels).Error; err != nil {

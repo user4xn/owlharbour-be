@@ -10,7 +10,6 @@ import (
 	"simpel-api/pkg/util"
 	"strconv"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -73,11 +72,6 @@ func (h *handler) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
-
-	session := sessions.Default(c)
-	session.Set("user_id", data.DataUser.ID)
-	session.Set("token", data.TokenJwt)
-	session.Save()
 
 	response := util.APIResponse("Success Login", http.StatusOK, "success", data)
 	c.JSON(http.StatusOK, response)
@@ -147,15 +141,16 @@ func (h *handler) StoreUser(c *gin.Context) {
 }
 
 func (h *handler) LogoutHandler(c *gin.Context) {
-	session := sessions.Default(c)
-	tokenString := session.Get("token")
-	if tokenString != nil {
-		session.Clear()
-		session.Save()
-		response := util.APIResponse("Success Logout", http.StatusOK, "success", nil)
+	err := h.service.LogoutService(c, c.Value("user"))
+	if err != nil {
+		response := util.APIResponse("Failed Logout", http.StatusBadRequest, "failed", nil)
 		c.JSON(http.StatusOK, response)
 		return
 	}
+
+	response := util.APIResponse("Success Logout", http.StatusOK, "success", nil)
+	c.JSON(http.StatusOK, response)
+	return
 }
 
 func (h *handler) DetailUser(c *gin.Context) {

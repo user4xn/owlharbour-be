@@ -11,4 +11,5 @@ type User struct {
 	Email           string     `gorm:"varchar"`
 	EmailVerifiedAt *time.Time `gorm:"timestamp"`
 	Password        string     `gorm:"varchar"`
+	JwtToken        string     `gorm:"text"`
 }
