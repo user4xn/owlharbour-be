@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,28 +19,17 @@ func Authenticate() gin.HandlerFunc {
 		if len(header) == 0 {
 			response := util.APIResponse("Sorry, you didn't enter a valid bearer token", http.StatusUnauthorized, "failed", nil)
 			c.JSON(http.StatusUnauthorized, response)
-			c.Abort() // Abort the middleware chain
-			return
-		}
-
-		session := sessions.Default(c)
-		tokenString := session.Get("token")
-
-		if tokenString == nil {
-			response := util.APIResponse("Token is missing", http.StatusUnauthorized, "failed", nil)
-			c.JSON(http.StatusUnauthorized, response)
-			c.Abort() // Abort the middleware chain
+			c.Abort()
 			return
 		}
 
 		rep := regexp.MustCompile(`(Bearer)\s?`)
 		bearerStr := rep.ReplaceAllString(header[0], "")
 		parsedToken, err := parseToken(bearerStr)
-
 		if err != nil || !parsedToken.Valid {
 			response := util.APIResponse("Invalid bearer token", http.StatusUnauthorized, "failed", nil)
 			c.JSON(http.StatusUnauthorized, response)
-			c.Abort() // Abort the middleware chain
+			c.Abort()
 			return
 		}
 
@@ -49,11 +37,17 @@ func Authenticate() gin.HandlerFunc {
 
 		f := factory.NewFactory()
 		userId, _ := strconv.Atoi(claims["user_id"].(string))
-		user, err := f.UserRepository.FindOne(c, "id,email,name,role", "id = ?", userId)
+		user, err := f.UserRepository.FindOne(c, "id,email,name,role,jwt_token", "id = ?", userId)
+		if user.JwtToken != bearerStr {
+			response := util.APIResponse("Unauthorized", http.StatusUnauthorized, "failed", nil)
+			c.JSON(http.StatusUnauthorized, response)
+			c.Abort()
+			return
+		}
 		if err != nil {
 			response := util.APIResponse("Unauthorized", http.StatusUnauthorized, "failed", nil)
 			c.JSON(http.StatusUnauthorized, response)
-			c.Abort() // Abort the middleware chain
+			c.Abort()
 			return
 		}
 

@@ -37,6 +37,7 @@ type Service interface {
 	DeleteUser(ctx context.Context, userID int) error
 	ChangePassword(ctx context.Context, userID int, payload dto.PayloadChangePassword) error
 	VerifyEmail(ctx context.Context, base64String string) error
+	LogoutService(ctx context.Context, userSess any) error
 }
 
 func NewService(f *factory.Factory) Service {
@@ -111,6 +112,16 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 		Name:  user.Name,
 	}
 
+	payloadJwtToken := dto.PayloadUpdateJwtToken{
+		ID:       user.ID,
+		JwtToken: jwt,
+	}
+	err = s.UserRepository.UpdateJwtToken(ctx, &payloadJwtToken, "jwt_token", "id = ?", user.ID)
+	if err != nil {
+		log.Println("Error updating jwt token:", err)
+		return dto.ReturnJwt{}, constants.ErrorGenerateJwt
+	}
+
 	jwtMode := util.GetEnv("JWT_MODE", "fallback")
 	expiredTime := time.Now().In(loc).Add(time.Hour * 730)
 	formatExpiredTime := expiredTime.Format("2006-01-02 15:04:05")
@@ -162,6 +173,21 @@ func (s *service) GetProfile(ctx context.Context, userSess any) dto.ProfileUser 
 		Email: userSess.(model.User).Email,
 		Role:  string(userSess.(model.User).Role),
 	}
+}
+
+func (s *service) LogoutService(ctx context.Context, userSess any) error {
+	ID := userSess.(model.User).ID
+	payloadJwtToken := dto.PayloadUpdateJwtToken{
+		ID:       ID,
+		JwtToken: "",
+	}
+	err := s.UserRepository.RemoveJwtToken(ctx, &payloadJwtToken, "jwt_token", "id = ?", ID)
+	if err != nil {
+		log.Println("Error updating jwt token:", err)
+		return err
+	}
+
+	return nil
 }
 
 func (s *service) DetailUser(ctx context.Context, userID int) (dto.DetailUser, error) {

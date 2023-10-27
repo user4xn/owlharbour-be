@@ -45,6 +45,11 @@ type (
 		UpdatedAt       time.Time `json:"updated_at"`
 	}
 
+	PayloadUpdateJwtToken struct {
+		ID       int    `json:"id"`
+		JwtToken string `json:"jwt_token"`
+	}
+
 	ReturnJwt struct {
 		TokenJwt  string         `json:"token_jwt"`
 		ExpiredAt string         `json:"expired_at"`
