@@ -8,6 +8,7 @@ import (
 	"simpel-api/internal/model"
 	"simpel-api/internal/repository"
 	"simpel-api/pkg/helper"
+	"simpel-api/pkg/log"
 	"strconv"
 	"time"
 
@@ -382,7 +383,7 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 
 	addonDetail, err := s.shipRepository.ShipAddonDetail(ctx, ShipID)
 	if err != nil {
-		return nil, err
+		log.Logging("Error Fethcing Addon Ship %s", err).Info()
 	}
 
 	res := &dto.ShipDetailResponse{
@@ -390,7 +391,7 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 		ShipName:        ship.Name,
 		ResponsibleName: ship.ResponsibleName,
 		DeviceID:        ship.DeviceID,
-		DetailShip:      *addonDetail,
+		DetailShip:      addonDetail,
 		CurrentLong:     ship.CurrentLong,
 		CurrentLat:      ship.CurrentLat,
 		FirebaseToken:   ship.FirebaseToken,

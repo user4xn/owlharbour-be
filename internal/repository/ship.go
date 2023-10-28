@@ -28,7 +28,7 @@ type Ship interface {
 	UpdateShipDetail(ctx context.Context, request dto.ShipAddonDetailRequest) error
 	ShipDockedLogs(ctx context.Context, ShipID int) ([]dto.DockLogsShip, error)
 	ShipLocationLogs(ctx context.Context, ShipID int) ([]dto.LocationLogsShip, error)
-	ShipAddonDetail(ctx context.Context, ShipID int) (*dto.ShipAddonDetailResponse, error)
+	ShipAddonDetail(ctx context.Context, ShipID int) (dto.ShipAddonDetailResponse, error)
 	CountShip(ctx context.Context) (int64, error)
 	CountStatistic(ctx context.Context) ([]int64, error)
 	LastUpdated(ctx context.Context) (time.Time, error)
@@ -416,14 +416,13 @@ func (r *ship) ShipLocationLogs(ctx context.Context, ShipID int) ([]dto.Location
 	return logDock, nil
 }
 
-func (r *ship) ShipAddonDetail(ctx context.Context, ShipID int) (*dto.ShipAddonDetailResponse, error) {
+func (r *ship) ShipAddonDetail(ctx context.Context, ShipID int) (dto.ShipAddonDetailResponse, error) {
 	tx := r.Db.WithContext(ctx).Begin()
 
 	var detail model.ShipDetail
-	err := tx.Where("ship_id = ?", ShipID).First(&detail).Error
-	if err != nil {
+	if err := tx.Where("ship_id = ?", ShipID).First(&detail).Error; err != nil {
 		tx.Rollback()
-		return nil, err
+		return dto.ShipAddonDetailResponse{}, err
 	}
 
 	res := dto.ShipAddonDetailResponse{
@@ -437,10 +436,10 @@ func (r *ship) ShipAddonDetail(ctx context.Context, ShipID int) (*dto.ShipAddonD
 
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
-		return nil, err
+		return dto.ShipAddonDetailResponse{}, err
 	}
 
-	return &res, nil
+	return res, nil
 }
 
 func (r *ship) CountShip(ctx context.Context) (int64, error) {
