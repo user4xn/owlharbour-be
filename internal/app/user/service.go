@@ -107,9 +107,10 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 	}
 
 	dataUser := dto.DataUserLogin{
-		ID:    user.ID,
-		Email: user.Email,
-		Name:  user.Name,
+		ID:              user.ID,
+		Email:           user.Email,
+		Name:            user.Name,
+		EmailVerifiedAt: user.EmailVerifiedAt,
 	}
 
 	payloadJwtToken := dto.PayloadUpdateJwtToken{

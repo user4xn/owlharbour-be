@@ -57,9 +57,10 @@ type (
 	}
 
 	DataUserLogin struct {
-		ID    int    `json:"id"`
-		Email string `json:"email"`
-		Name  string `json:"name"`
+		ID              int        `json:"id"`
+		Email           string     `json:"email"`
+		Name            string     `json:"name"`
+		EmailVerifiedAt *time.Time `json:"email_verify_at"`
 	}
 
 	ProfileUser struct {
