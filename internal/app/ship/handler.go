@@ -194,8 +194,13 @@ func (h *handler) RecordLog(c *gin.Context) {
 			response := util.APIResponse("Invalid device id, no ship data", http.StatusBadRequest, "failed", nil)
 			c.JSON(http.StatusBadRequest, response)
 		} else {
-			response := util.APIResponse("Unable to record location: "+err.Error(), http.StatusInternalServerError, "failed", nil)
-			c.JSON(http.StatusInternalServerError, response)
+			statusCode := http.StatusInternalServerError
+			if err.Error() == "HTTP request failed with status code 429" {
+				statusCode = http.StatusTooManyRequests
+			}
+
+			response := util.APIResponse("Unable to record location: "+err.Error(), statusCode, "failed", nil)
+			c.JSON(statusCode, response)
 		}
 		return
 	}

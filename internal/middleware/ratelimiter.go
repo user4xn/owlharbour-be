@@ -9,14 +9,16 @@ import (
 
 type RateLimiter struct {
 	requestsPerSecond int
+	windowSize        time.Duration
 	mu                sync.Mutex
-	lastAccess        map[string]time.Time
+	requestQueue      map[string][]time.Time
 }
 
-func NewRateLimiter(requestsPerSecond int) *RateLimiter {
+func NewRateLimiter(requestsPerSecond int, windowSize time.Duration) *RateLimiter {
 	return &RateLimiter{
 		requestsPerSecond: requestsPerSecond,
-		lastAccess:        make(map[string]time.Time),
+		windowSize:        windowSize,
+		requestQueue:      make(map[string][]time.Time),
 	}
 }
 
@@ -26,13 +28,25 @@ func (r *RateLimiter) Limit() gin.HandlerFunc {
 		r.mu.Lock()
 		defer r.mu.Unlock()
 
-		if lastAccess, ok := r.lastAccess[clientIP]; ok && time.Since(lastAccess).Seconds() < 1.0/float64(r.requestsPerSecond) {
+		now := time.Now()
+		queue, ok := r.requestQueue[clientIP]
+		if !ok {
+			r.requestQueue[clientIP] = []time.Time{now}
+		} else {
+			// Remove timestamps that are older than the sliding window
+			for len(queue) > 0 && now.Sub(queue[0]) > r.windowSize {
+				queue = queue[1:]
+			}
+			queue = append(queue, now)
+			r.requestQueue[clientIP] = queue
+		}
+
+		if len(queue) > r.requestsPerSecond {
 			c.JSON(429, gin.H{"message": "Too Many Requests"})
 			c.Abort()
 			return
 		}
 
-		r.lastAccess[clientIP] = time.Now()
 		c.Next()
 	}
 }

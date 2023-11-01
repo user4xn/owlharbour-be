@@ -2,12 +2,14 @@ package ship
 
 import (
 	"simpel-api/internal/middleware"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 func (h *handler) Router(g *gin.RouterGroup) {
-	rateLimiter := middleware.NewRateLimiter(10)
+	//100 rps , 1 minute sliding windows
+	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
 
 	g.POST("/pairing", h.PairingShip)
 	g.GET("/pairing/detail/:device_id", h.PairingDetailByDevice)
