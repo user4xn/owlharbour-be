@@ -17,13 +17,14 @@ type (
 	}
 
 	GetDataSetting struct {
-		HarbourCode     int    `json:"harbour_code"`
-		HarbourName     string `json:"harbour_name"`
-		Mode            string `json:"mode"`
-		ApkMinVersion   string `json:"apk_min_version"`
-		Interval        int    `json:"interval"`
-		Range           int    `json:"range"`
-		ApkDownloadLink string `json:"apk_min_download"`
+		HarbourCode     int           `json:"harbour_code"`
+		HarbourName     string        `json:"harbour_name"`
+		Mode            string        `json:"mode"`
+		ApkMinVersion   string        `json:"apk_min_version"`
+		Interval        int           `json:"interval"`
+		Range           int           `json:"range"`
+		ApkDownloadLink string        `json:"apk_min_download"`
+		Geofences       []AppGeofence `json:"geofences"`
 	}
 
 	GetDataSettingWeb struct {

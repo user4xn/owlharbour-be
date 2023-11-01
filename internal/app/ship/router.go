@@ -7,10 +7,12 @@ import (
 )
 
 func (h *handler) Router(g *gin.RouterGroup) {
+	rateLimiter := middleware.NewRateLimiter(10)
+
 	g.POST("/pairing", h.PairingShip)
 	g.GET("/pairing/detail/:device_id", h.PairingDetailByDevice)
 	g.GET("/by-device/:device_id", h.ShipByDevice)
-	g.POST("/record-log", h.RecordLog)
+	g.POST("/record-log", rateLimiter.Limit(), h.RecordLog)
 
 	g.Use(middleware.Authenticate())
 	g.GET("/pairing-request", h.PairingRequestList)

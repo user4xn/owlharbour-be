@@ -34,7 +34,7 @@ type Ship interface {
 	LastUpdated(ctx context.Context) (time.Time, error)
 	ShipInBatch(ctx context.Context, start int, end int) (*[]model.Ship, bool, error)
 	ReportShipDocking(ctx context.Context, request dto.ReportShipDockedParam) ([]dto.ReportShipDockingResponse, error)
-	ReportShipLocation(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error)
+	ReportShipFraud(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error)
 }
 
 type ship struct {
@@ -657,15 +657,15 @@ func (r *ship) ReportShipDocking(ctx context.Context, request dto.ReportShipDock
 
 	cacheKey := "report_ship_list-" + uniqueString
 
-	// if r.CacheEnabled {
-	// 	cachedData, err := r.RedisClient.Get(ctx, cacheKey).Result()
-	// 	if err == nil {
-	// 		var cachedInfo []dto.ReportShipDockingResponse
-	// 		if err := json.Unmarshal([]byte(cachedData), &cachedInfo); err == nil {
-	// 			return cachedInfo, nil
-	// 		}
-	// 	}
-	// }
+	if r.CacheEnabled {
+		cachedData, err := r.RedisClient.Get(ctx, cacheKey).Result()
+		if err == nil {
+			var cachedInfo []dto.ReportShipDockingResponse
+			if err := json.Unmarshal([]byte(cachedData), &cachedInfo); err == nil {
+				return cachedInfo, nil
+			}
+		}
+	}
 
 	tx := r.Db.WithContext(ctx).Begin()
 
@@ -727,12 +727,13 @@ func (r *ship) ReportShipDocking(ctx context.Context, request dto.ReportShipDock
 	return shipDock, nil
 }
 
-func (r *ship) ReportShipLocation(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error) {
+func (r *ship) ReportShipFraud(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error) {
 	tx := r.Db.WithContext(ctx).Begin()
 
 	query := tx.Model(&model.ShipLocationLog{}).
 		Select("ship_location_logs.*, ships.name as ship_name").
-		Joins("JOIN ships ON ship_location_logs.ship_id = ships.id")
+		Joins("JOIN ships ON ship_location_logs.ship_id = ships.id").
+		Where("is_mocked = 1")
 
 	if request.Search != "" {
 		searchLower := strings.ToLower(request.Search)

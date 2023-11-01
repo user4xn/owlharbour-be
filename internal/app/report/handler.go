@@ -60,7 +60,7 @@ func (h *handler) ShipDocking(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) ShipLocation(c *gin.Context) {
+func (h *handler) ShipFraud(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	offsetParam := c.DefaultQuery("offset", "0")
@@ -84,13 +84,13 @@ func (h *handler) ShipLocation(c *gin.Context) {
 		EndDate:   dateEnd,
 	}
 
-	data, err := h.service.ShipLocation(ctx, param)
+	data, err := h.service.ShipFraud(ctx, param)
 	if err != nil {
 		response := util.APIResponse(err.Error(), http.StatusBadRequest, "failed", nil)
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
-	response := util.APIResponse("Success get data location", http.StatusOK, "success", data)
+	response := util.APIResponse("Success get data fraud", http.StatusOK, "success", data)
 	c.JSON(http.StatusOK, response)
 }

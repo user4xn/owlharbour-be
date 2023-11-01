@@ -13,7 +13,7 @@ type service struct {
 
 type Service interface {
 	ShipDocking(ctx context.Context, request dto.ReportShipDockedParam) ([]dto.ReportShipDockingResponse, error)
-	ShipLocation(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error)
+	ShipFraud(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -31,8 +31,8 @@ func (s *service) ShipDocking(ctx context.Context, request dto.ReportShipDockedP
 	return res, nil
 }
 
-func (s *service) ShipLocation(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error) {
-	res, err := s.shipRepository.ReportShipLocation(ctx, request)
+func (s *service) ShipFraud(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error) {
+	res, err := s.shipRepository.ReportShipFraud(ctx, request)
 	if err != nil {
 		return nil, err
 	}

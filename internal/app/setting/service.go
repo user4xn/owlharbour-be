@@ -31,6 +31,30 @@ func (s *service) GetSetting(ctx context.Context) (dto.GetDataSetting, error) {
 		return dto.GetDataSetting{}, constants.NotFoundDataAppSetting
 	}
 
+	getGeofance, err := s.AppRepository.GetPolygon(ctx)
+	if err != nil {
+		data := dto.GetDataSetting{
+			HarbourCode:     appsetting.HarbourCode,
+			HarbourName:     appsetting.HarbourName,
+			Mode:            appsetting.Mode.String(),
+			ApkMinVersion:   appsetting.ApkMinVersion,
+			Interval:        appsetting.Interval,
+			Range:           appsetting.Range,
+			ApkDownloadLink: appsetting.ApkDownloadLink,
+			Geofences:       nil,
+		}
+		return data, nil
+	}
+
+	geofences := []dto.AppGeofence{}
+	for _, gf := range getGeofance {
+		dataGeofance := dto.AppGeofence{
+			Long: gf.Long,
+			Lat:  gf.Lat,
+		}
+		geofences = append(geofences, dataGeofance)
+	}
+
 	data := dto.GetDataSetting{
 		HarbourCode:     appsetting.HarbourCode,
 		HarbourName:     appsetting.HarbourName,
@@ -39,6 +63,7 @@ func (s *service) GetSetting(ctx context.Context) (dto.GetDataSetting, error) {
 		Interval:        appsetting.Interval,
 		Range:           appsetting.Range,
 		ApkDownloadLink: appsetting.ApkDownloadLink,
+		Geofences:       geofences,
 	}
 
 	return data, nil
