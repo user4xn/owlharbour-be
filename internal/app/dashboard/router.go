@@ -25,6 +25,8 @@ func (h *handler) Router(g *gin.RouterGroup) {
 		h.shipMonitorWebsocket(c)
 	})
 
+	g.GET("/ship-monitor/open-websocket", h.shipMonitorWebsocket)
+
 	g.Use(middleware.Authenticate())
 	g.GET("/statistic", h.harbourStatistic)
 }
