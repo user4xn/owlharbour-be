@@ -224,7 +224,7 @@ func (h *handler) VerifyEmail(c *gin.Context) {
 		urlRedirect := util.GetEnv("FE_URL", "fallback") + "/auth/error-verify"
 		c.Redirect(http.StatusSeeOther, urlRedirect)
 	}
-	urlRedirect := util.GetEnv("FE_URL", "fallback") + "/auth/success-verify"
+	urlRedirect := util.GetEnv("FE_URL", "fallback") + "/verification "
 	c.Redirect(http.StatusSeeOther, urlRedirect)
 }
 
