@@ -14,6 +14,8 @@ func (h *handler) Router(g *gin.RouterGroup) {
 	g.POST("/pairing", h.PairingShip)
 	g.GET("/pairing/detail/:device_id", h.PairingDetailByDevice)
 	g.GET("/by-device/:device_id", h.ShipByDevice)
+	g.GET("/by-device/dock-log/:device_id", h.ShipDockLogByDevice)
+	g.GET("/by-device/location-log/:device_id", h.ShipLocationLogByDevice)
 	g.POST("/record-log", rateLimiter.Limit(), h.RecordLog)
 
 	g.Use(middleware.Authenticate())
@@ -22,5 +24,7 @@ func (h *handler) Router(g *gin.RouterGroup) {
 
 	g.GET("/list", h.ShipList)
 	g.GET("/detail/:ship_id", h.ShipDetail)
+	g.GET("/dock-log/:ship_id", h.ShipDockLog)
+	g.GET("/location-log/:ship_id", h.ShipLocationLog)
 	g.PUT("/update-detail", h.UpdateShipDetail)
 }

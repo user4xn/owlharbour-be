@@ -26,8 +26,8 @@ type Ship interface {
 	StoreLocationLog(ctx context.Context, request dto.ShipLocationLogStore) error
 	UpdateShip(ctx context.Context, request model.Ship) error
 	UpdateShipDetail(ctx context.Context, request dto.ShipAddonDetailRequest) error
-	ShipDockedLogs(ctx context.Context, ShipID int) ([]dto.DockLogsShip, error)
-	ShipLocationLogs(ctx context.Context, ShipID int) ([]dto.LocationLogsShip, error)
+	ShipDockedLogs(ctx context.Context, ShipID int, request *dto.ShipLogParam) ([]dto.DockLogsShip, error)
+	ShipLocationLogs(ctx context.Context, ShipID int, request *dto.ShipLogParam) ([]dto.LocationLogsShip, error)
 	ShipAddonDetail(ctx context.Context, ShipID int) (dto.ShipAddonDetailResponse, error)
 	CountShip(ctx context.Context) (int64, error)
 	CountStatistic(ctx context.Context) ([]int64, error)
@@ -357,11 +357,25 @@ func (r *ship) ShipByID(ctx context.Context, ShipID int) (*model.Ship, error) {
 	return &ship, nil
 }
 
-func (r *ship) ShipDockedLogs(ctx context.Context, ShipID int) ([]dto.DockLogsShip, error) {
+func (r *ship) ShipDockedLogs(ctx context.Context, ShipID int, request *dto.ShipLogParam) ([]dto.DockLogsShip, error) {
 	tx := r.Db.WithContext(ctx).Begin()
-
+	fmt.Println(request)
 	var logs []model.ShipDockedLog
-	err := tx.Where("ship_id = ?", ShipID).Order("created_at DESC").Find(&logs).Error
+	query := tx.Where("ship_id = ?", ShipID).Order("created_at DESC")
+	
+	if (request.StartDate != "" && request.EndDate != "") {
+		query = query.Where("created_at BETWEEN ? AND ?", request.StartDate, request.EndDate)
+	}
+
+	limit := 10
+	if(request.Limit != 0) {
+		limit = request.Limit
+	}
+	
+	query.Limit(limit).Offset(request.Offset)
+	
+	
+	err := query.Find(&logs).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -386,11 +400,24 @@ func (r *ship) ShipDockedLogs(ctx context.Context, ShipID int) ([]dto.DockLogsSh
 	return logDock, nil
 }
 
-func (r *ship) ShipLocationLogs(ctx context.Context, ShipID int) ([]dto.LocationLogsShip, error) {
+func (r *ship) ShipLocationLogs(ctx context.Context, ShipID int, request *dto.ShipLogParam) ([]dto.LocationLogsShip, error) {
 	tx := r.Db.WithContext(ctx).Begin()
 
 	var logs []model.ShipLocationLog
-	err := tx.Where("ship_id = ?", ShipID).Order("created_at DESC").Find(&logs).Error
+	query := tx.Where("ship_id = ?", ShipID).Order("created_at DESC")
+
+	if (request.StartDate != "" && request.EndDate != "") {
+		query = query.Where("created_at BETWEEN ? AND ?", request.StartDate, request.EndDate)
+	}
+
+	limit := 10
+	if(request.Limit != 0) {
+		limit = request.Limit
+	}
+	
+	query.Limit(limit).Offset(request.Offset)
+
+	err := query.Find(&logs).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, err

@@ -1,6 +1,22 @@
 package dto
 
 type (
+	ShipLogParam struct {
+		Offset    int    `json:"offset"`
+		Limit     int    `json:"limit"`
+		StartDate string `json:"start_date"`
+		EndDate   string `json:"end_date"`
+	}
+
+	ShipDockLogResponse struct {
+		ID          any            `json:"id"`
+		DockingLogs []DockLogsShip `json:"docking_logs"`
+	}
+	ShipLocationLogResponse struct {
+		ID           any                `json:"id"`
+		LocationLogs []LocationLogsShip `json:"location_logs"`
+	}
+
 	ShipListParam struct {
 		Offset int      `json:"offset"`
 		Limit  int      `json:"limit"`
@@ -16,6 +32,7 @@ type (
 		StartDate string   `json:"start_date"`
 		EndDate   string   `json:"end_date"`
 	}
+
 	ReportShipLocationParam struct {
 		Offset    int    `json:"offset"`
 		Limit     int    `json:"limit"`
@@ -54,20 +71,19 @@ type (
 	}
 
 	ShipMobileDetailResponse struct {
-		ID              int            `json:"id"`
-		ShipName        string         `json:"ship_name"`
-		ResponsibleName string         `json:"responsible_name"`
-		DeviceID        string         `json:"device_id"`
-		CurrentLong     string         `json:"current_long"`
-		CurrentLat      string         `json:"current_lat"`
-		FirebaseToken   string         `json:"firebase_token"`
-		Status          string         `json:"status"`
-		OnGround        int            `json:"on_ground"`
-		CreatedAt       string         `json:"created_at"`
-		HitMode         string         `json:"hit_mode"`
-		Range           int            `json:"range"`
-		Interval        int            `json:"interval"`
-		DockingLogs     []DockLogsShip `json:"docking_logs"`
+		ID              int    `json:"id"`
+		ShipName        string `json:"ship_name"`
+		ResponsibleName string `json:"responsible_name"`
+		DeviceID        string `json:"device_id"`
+		CurrentLong     string `json:"current_long"`
+		CurrentLat      string `json:"current_lat"`
+		FirebaseToken   string `json:"firebase_token"`
+		Status          string `json:"status"`
+		OnGround        int    `json:"on_ground"`
+		CreatedAt       string `json:"created_at"`
+		HitMode         string `json:"hit_mode"`
+		Range           int    `json:"range"`
+		Interval        int    `json:"interval"`
 	}
 
 	ShipDetailResponse struct {
@@ -82,8 +98,6 @@ type (
 		Status          string                  `json:"status"`
 		OnGround        int                     `json:"on_ground"`
 		CreatedAt       string                  `json:"created_at"`
-		DockLogs        []DockLogsShip          `json:"dock_logs"`
-		LocationLogs    []LocationLogsShip      `json:"location_logs"`
 	}
 
 	ShipAddonDetailResponse struct {

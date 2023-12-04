@@ -298,3 +298,141 @@ func (h *handler) PairingDetailByDevice(c *gin.Context) {
 	response := util.APIResponse("Successfully retrieved pairing data", http.StatusOK, "success", shipDetail)
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *handler) ShipDockLog(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	shipIDStr := c.Param("ship_id")
+	offsetParam := c.DefaultQuery("offset", "0")
+	limitParam := c.DefaultQuery("limit", "25")
+	dateStart := c.DefaultQuery("start_date", "")
+	dateEnd := c.DefaultQuery("end_date", "")
+
+	offset, _ := strconv.Atoi(offsetParam)
+	limit, _ := strconv.Atoi(limitParam)
+	shipID, _ := strconv.Atoi(shipIDStr)
+
+	if limit == 0 {
+		limit = 10
+	}
+	
+	param := dto.ShipLogParam{
+		Offset: offset,
+		Limit:  limit,
+		StartDate: dateStart,
+		EndDate: dateEnd,
+	}
+
+	res, err := h.service.ShipDockLog(ctx, param, shipID)
+	if err != nil {
+		response := util.APIResponse("Failed to retrieve ship list: "+err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := util.APIResponse("Successfully retrieved ship list", http.StatusOK, "success", res)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *handler) ShipLocationLog(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	shipIDStr := c.Param("ship_id")
+	offsetParam := c.DefaultQuery("offset", "0")
+	limitParam := c.DefaultQuery("limit", "25")
+	dateStart := c.DefaultQuery("start_date", "")
+	dateEnd := c.DefaultQuery("end_date", "")
+
+	offset, _ := strconv.Atoi(offsetParam)
+	limit, _ := strconv.Atoi(limitParam)
+	shipID, _ := strconv.Atoi(shipIDStr)
+
+	if limit == 0 {
+		limit = 10
+	}
+	
+	param := dto.ShipLogParam{
+		Offset: offset,
+		Limit:  limit,
+		StartDate: dateStart,
+		EndDate: dateEnd,
+	}
+
+	res, err := h.service.ShipLocationLog(ctx, param, shipID)
+	if err != nil {
+		response := util.APIResponse("Failed to retrieve ship list: "+err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := util.APIResponse("Successfully retrieved ship list", http.StatusOK, "success", res)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *handler) ShipDockLogByDevice(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	deviceID := c.Param("device_id")
+	offsetParam := c.DefaultQuery("offset", "0")
+	limitParam := c.DefaultQuery("limit", "25")
+	dateStart := c.DefaultQuery("start_date", "")
+	dateEnd := c.DefaultQuery("end_date", "")
+
+	offset, _ := strconv.Atoi(offsetParam)
+	limit, _ := strconv.Atoi(limitParam)
+
+	if limit == 0 {
+		limit = 10
+	}
+	
+	param := dto.ShipLogParam{
+		Offset: offset,
+		Limit:  limit,
+		StartDate: dateStart,
+		EndDate: dateEnd,
+	}
+
+	res, err := h.service.ShipDockLog(ctx, param, deviceID)
+	if err != nil {
+		response := util.APIResponse("Failed to retrieve ship list: "+err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := util.APIResponse("Successfully retrieved ship list", http.StatusOK, "success", res)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *handler) ShipLocationLogByDevice(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	deviceID := c.Param("device_id")
+	offsetParam := c.DefaultQuery("offset", "0")
+	limitParam := c.DefaultQuery("limit", "25")
+	dateStart := c.DefaultQuery("start_date", "")
+	dateEnd := c.DefaultQuery("end_date", "")
+
+	offset, _ := strconv.Atoi(offsetParam)
+	limit, _ := strconv.Atoi(limitParam)
+
+	if limit == 0 {
+		limit = 10
+	}
+	
+	param := dto.ShipLogParam{
+		Offset: offset,
+		Limit:  limit,
+		StartDate: dateStart,
+		EndDate: dateEnd,
+	}
+
+	res, err := h.service.ShipLocationLog(ctx, param, deviceID)
+	if err != nil {
+		response := util.APIResponse("Failed to retrieve ship list: "+err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := util.APIResponse("Successfully retrieved ship list", http.StatusOK, "success", res)
+	c.JSON(http.StatusOK, response)
+}

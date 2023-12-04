@@ -31,6 +31,8 @@ type Service interface {
 	RecordLocationShip(ctx context.Context, request dto.ShipRecordRequest) error
 	UpdateShipDetail(ctx context.Context, request dto.ShipAddonDetailRequest) error
 	ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailResponse, error)
+	ShipDockLog(ctx context.Context, request dto.ShipLogParam, shipOrDeviceID any) (*dto.ShipDockLogResponse, error)
+	ShipLocationLog(ctx context.Context, request dto.ShipLogParam, shipOrDeviceID any) (*dto.ShipLocationLogResponse, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -146,11 +148,6 @@ func (s *service) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipM
 		return nil, err
 	}
 
-	dockedLogs, err := s.shipRepository.ShipDockedLogs(ctx, ship.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	res := &dto.ShipMobileDetailResponse{
 		ID:              ship.ID,
 		ShipName:        ship.ShipName,
@@ -165,7 +162,6 @@ func (s *service) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipM
 		HitMode:         appInfo.Mode,
 		Range:           appInfo.Range,
 		Interval:        appInfo.Interval,
-		DockingLogs:     dockedLogs,
 	}
 
 	return res, nil
@@ -371,16 +367,6 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 		return nil, err
 	}
 
-	dockedLogs, err := s.shipRepository.ShipDockedLogs(ctx, ShipID)
-	if err != nil {
-		return nil, err
-	}
-
-	locationLogs, err := s.shipRepository.ShipLocationLogs(ctx, ShipID)
-	if err != nil {
-		return nil, err
-	}
-
 	addonDetail, err := s.shipRepository.ShipAddonDetail(ctx, ShipID)
 	if err != nil {
 		log.Logging("Error Fethcing Addon Ship %s", err).Info()
@@ -398,8 +384,6 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 		Status:          string(ship.Status),
 		OnGround:        ship.OnGround,
 		CreatedAt:       ship.CreatedAt.Format("2006-01-02 15:04:05"),
-		DockLogs:        dockedLogs,
-		LocationLogs:    locationLogs,
 	}
 
 	return res, nil
@@ -409,6 +393,62 @@ func (s *service) PairingDetailByDevice(ctx context.Context, DeviceID string) (*
 	res, err := s.pairingRequestRepository.PairingDetailByDevice(ctx, DeviceID)
 	if err != nil {
 		return nil, err
+	}
+	
+	return res, nil
+}
+
+func (s *service) ShipDockLog(ctx context.Context, request dto.ShipLogParam, shipOrDeviceID any) (*dto.ShipDockLogResponse, error) {
+	var id int
+
+	switch shipOrDeviceID.(type) {
+		case int:
+			id = shipOrDeviceID.(int)
+		case string:
+			ship, err := s.shipRepository.ShipByDevice(ctx, shipOrDeviceID.(string))
+			if err != nil {
+				return nil, err
+			}
+
+			id = ship.ID
+	}
+
+	dockLogs, err := s.shipRepository.ShipDockedLogs(ctx, id, &request)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &dto.ShipDockLogResponse{
+		ID: id,
+		DockingLogs: dockLogs,
+	}
+
+	return res, nil
+}
+
+func (s *service) ShipLocationLog(ctx context.Context, request dto.ShipLogParam, shipOrDeviceID any) (*dto.ShipLocationLogResponse, error) {
+	var id int
+
+	switch shipOrDeviceID.(type) {
+		case int:
+			id = shipOrDeviceID.(int)
+		case string:
+			ship, err := s.shipRepository.ShipByDevice(ctx, shipOrDeviceID.(string))
+			if err != nil {
+				return nil, err
+			}
+
+			id = ship.ID
+	}
+
+	locationLogs, err := s.shipRepository.ShipLocationLogs(ctx, id, &request)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &dto.ShipLocationLogResponse{
+		ID: id,
+		LocationLogs: locationLogs,
 	}
 
 	return res, nil

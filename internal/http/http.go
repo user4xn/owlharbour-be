@@ -37,6 +37,7 @@ func NewHttp(g *gin.Engine, f *factory.Factory) {
 		Rate:  time.Minute,
 		Limit: 100,
 	})
+	
 	limiter := ratelimit.RateLimiter(rate, &ratelimit.Options{
 		ErrorHandler: errorHandler,
 		KeyFunc:      keyFunc,
