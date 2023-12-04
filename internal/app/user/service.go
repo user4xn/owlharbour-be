@@ -52,7 +52,7 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 		return dto.ReturnJwt{}, constants.ErrorLoadLocationTime
 	}
 
-	user, err := s.UserRepository.FindOne(ctx, "id, email, name, password, email_verified_at", "email = ?", payload.Email)
+	user, err := s.UserRepository.FindOne(ctx, "id, email, name, password, email_verified_at, role", "email = ?", payload.Email)
 	if err != nil {
 		return dto.ReturnJwt{}, constants.UserNotFound
 	}
@@ -111,6 +111,7 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 		Email:           user.Email,
 		Name:            user.Name,
 		EmailVerifiedAt: user.EmailVerifiedAt,
+		Role:            string(user.Role),
 	}
 
 	payloadJwtToken := dto.PayloadUpdateJwtToken{

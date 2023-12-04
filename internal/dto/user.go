@@ -61,6 +61,7 @@ type (
 		Email           string     `json:"email"`
 		Name            string     `json:"name"`
 		EmailVerifiedAt *time.Time `json:"email_verify_at"`
+		Role            string     `json:"role"`
 	}
 
 	ProfileUser struct {
