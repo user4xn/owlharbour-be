@@ -44,6 +44,7 @@ type (
 	ReportShipDockingResponse struct {
 		LogID    int    `json:"log_id"`
 		LogDate  string `json:"log_date"`
+		ShipID   int    `json:"ship_id"`
 		ShipName string `json:"ship_name"`
 		Long     string `json:"long"`
 		Lat      string `json:"lat"`
@@ -53,6 +54,7 @@ type (
 	ReportShipLocationResponse struct {
 		LogID    int    `json:"log_id"`
 		LogDate  string `json:"log_date"`
+		ShipID   int    `json:"ship_id"`
 		ShipName string `json:"ship_name"`
 		Long     string `json:"long"`
 		Lat      string `json:"lat"`

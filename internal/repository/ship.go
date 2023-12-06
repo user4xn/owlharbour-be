@@ -362,19 +362,18 @@ func (r *ship) ShipDockedLogs(ctx context.Context, ShipID int, request *dto.Ship
 	fmt.Println(request)
 	var logs []model.ShipDockedLog
 	query := tx.Where("ship_id = ?", ShipID).Order("created_at DESC")
-	
-	if (request.StartDate != "" && request.EndDate != "") {
+
+	if request.StartDate != "" && request.EndDate != "" {
 		query = query.Where("created_at BETWEEN ? AND ?", request.StartDate, request.EndDate)
 	}
 
 	limit := 10
-	if(request.Limit != 0) {
+	if request.Limit != 0 {
 		limit = request.Limit
 	}
-	
+
 	query.Limit(limit).Offset(request.Offset)
-	
-	
+
 	err := query.Find(&logs).Error
 	if err != nil {
 		tx.Rollback()
@@ -406,15 +405,15 @@ func (r *ship) ShipLocationLogs(ctx context.Context, ShipID int, request *dto.Sh
 	var logs []model.ShipLocationLog
 	query := tx.Where("ship_id = ?", ShipID).Order("created_at DESC")
 
-	if (request.StartDate != "" && request.EndDate != "") {
+	if request.StartDate != "" && request.EndDate != "" {
 		query = query.Where("created_at BETWEEN ? AND ?", request.StartDate, request.EndDate)
 	}
 
 	limit := 10
-	if(request.Limit != 0) {
+	if request.Limit != 0 {
 		limit = request.Limit
 	}
-	
+
 	query.Limit(limit).Offset(request.Offset)
 
 	err := query.Find(&logs).Error
@@ -697,7 +696,7 @@ func (r *ship) ReportShipDocking(ctx context.Context, request dto.ReportShipDock
 	tx := r.Db.WithContext(ctx).Begin()
 
 	query := tx.Model(&model.ShipDockedLog{}).
-		Select("ship_docked_logs.*, ships.name as ship_name").
+		Select("ship_docked_logs.*, ships.name as ship_name, ships.id as ship_id").
 		Joins("JOIN ships ON ship_docked_logs.ship_id = ships.id")
 
 	if request.LogType != nil && request.LogType[0] != "" && len(request.LogType) > 0 {
@@ -729,6 +728,7 @@ func (r *ship) ReportShipDocking(ctx context.Context, request dto.ReportShipDock
 	for _, e := range result {
 		shipDock = append(shipDock, dto.ReportShipDockingResponse{
 			LogID:    e.ID,
+			ShipID:   e.ShipID,
 			ShipName: e.ShipName,
 			Lat:      e.Lat,
 			Long:     e.Long,
@@ -758,7 +758,7 @@ func (r *ship) ReportShipFraud(ctx context.Context, request dto.ReportShipLocati
 	tx := r.Db.WithContext(ctx).Begin()
 
 	query := tx.Model(&model.ShipLocationLog{}).
-		Select("ship_location_logs.*, ships.name as ship_name").
+		Select("ship_location_logs.*, ships.name as ship_name, ships.id as ship_id").
 		Joins("JOIN ships ON ship_location_logs.ship_id = ships.id").
 		Where("is_mocked = 1")
 
@@ -787,6 +787,7 @@ func (r *ship) ReportShipFraud(ctx context.Context, request dto.ReportShipLocati
 	for _, e := range result {
 		shipDock = append(shipDock, dto.ReportShipLocationResponse{
 			LogID:    e.ID,
+			ShipID:   e.ShipID,
 			ShipName: e.ShipName,
 			Lat:      e.Lat,
 			Long:     e.Long,
