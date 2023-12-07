@@ -152,15 +152,15 @@ func (s *service) GetAllUsers(ctx context.Context, request dto.UserListParam) ([
 	if err != nil {
 		return nil, err
 	}
-
 	for _, user := range users {
 		user := dto.AllUser{
-			ID:        user.ID,
-			Name:      user.Name,
-			Email:     user.Email,
-			Role:      user.Role,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
+			ID:              user.ID,
+			Name:            user.Name,
+			Email:           user.Email,
+			Role:            user.Role,
+			EmailVerifiedAt: user.EmailVerifiedAt,
+			CreatedAt:       user.CreatedAt,
+			UpdatedAt:       user.UpdatedAt,
 		}
 		AllUser = append(AllUser, user)
 	}

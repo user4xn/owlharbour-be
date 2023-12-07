@@ -80,20 +80,31 @@ func (r *user) GetAll(ctx context.Context, request dto.UserListParam) ([]dto.All
 		return nil, err
 	}
 
-	var AllUser []dto.AllUser
+	var AllUser []dto.AllUser // Initialize the slice
+
 	for _, user := range res {
 		tCreatedAt := user.CreatedAt
 		tUpdatedAt := user.UpdatedAt
+		tEmailVerifiedAt := user.EmailVerifiedAt
+
 		formatCreatedAt := tCreatedAt.Format("2006-01-02 15:04:05")
 		formatUpdatedAt := tUpdatedAt.Format("2006-01-02 15:04:05")
-		userDTO := dto.AllUser{
-			ID:        user.ID,
-			Name:      user.Name,
-			Email:     user.Email,
-			Role:      string(user.Role),
-			CreatedAt: formatCreatedAt,
-			UpdatedAt: formatUpdatedAt,
+		formatEmailVerifiedAt := ""
+
+		if tEmailVerifiedAt != nil { // Check if EmailVerifiedAt is not zero time
+			formatEmailVerifiedAt = tEmailVerifiedAt.Format("2006-01-02 15:04:05")
 		}
+
+		userDTO := dto.AllUser{
+			ID:              user.ID,
+			Name:            user.Name,
+			Email:           user.Email,
+			Role:            string(user.Role),
+			EmailVerifiedAt: formatEmailVerifiedAt,
+			CreatedAt:       formatCreatedAt,
+			UpdatedAt:       formatUpdatedAt,
+		}
+
 		AllUser = append(AllUser, userDTO)
 	}
 
