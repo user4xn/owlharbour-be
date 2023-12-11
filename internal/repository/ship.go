@@ -35,6 +35,9 @@ type Ship interface {
 	ShipInBatch(ctx context.Context, start int, end int) (*[]model.Ship, bool, error)
 	ReportShipDocking(ctx context.Context, request dto.ReportShipDockedParam) ([]dto.ReportShipDockingResponse, error)
 	ReportShipFraud(ctx context.Context, request dto.ReportShipLocationParam) ([]dto.ReportShipLocationResponse, error)
+	CountShipByTerrain(ctx context.Context, onGround int) (int64, error)
+	CountShipByStatus(ctx context.Context, startDate string, endDate string, status string) (int64, error)
+	CountShipFraud(ctx context.Context, startDate string, endDate string) (int64, error)
 }
 
 type ship struct {
@@ -49,6 +52,65 @@ func NewShipRepository(db *gorm.DB, redisClient *redis.Client) Ship {
 		RedisClient:  redisClient,
 		CacheEnabled: true,
 	}
+}
+
+func (r *ship) CountShipFraud(ctx context.Context, startDate string, endDate string) (int64, error) {
+	tx := r.Db.WithContext(ctx).Begin()
+	
+	query := tx.Model(&model.ShipLocationLog{})
+
+	var res int64
+
+	if startDate != "" && endDate != "" {
+		query = query.Where("created_at BETWEEN ? AND ?", startDate, endDate)
+	}
+
+	query.Where("is_mocked = ?", 1).Count(&res)
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	return res, nil
+}
+
+func (r *ship) CountShipByStatus(ctx context.Context, startDate string, endDate string, status string) (int64, error)  {
+	tx := r.Db.WithContext(ctx).Begin()
+	
+	query := tx.Model(&model.Ship{})
+
+	var res int64
+
+	if startDate != "" && endDate != "" {
+		query = query.Where("created_at BETWEEN ? AND ?", startDate, endDate)
+	}
+
+	query.Where("status = ?", status).Count(&res)
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	return res, nil
+}
+
+func (r *ship) CountShipByTerrain(ctx context.Context, onGround int) (int64, error) {
+	tx := r.Db.WithContext(ctx).Begin()
+	
+	query := tx.Model(&model.Ship{})
+
+	var res int64
+
+	query.Where("on_ground = ?", onGround).Count(&res)
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	return res, nil
 }
 
 func (r *ship) StoreNewShip(ctx context.Context, request dto.PairingRequestResponse) error {

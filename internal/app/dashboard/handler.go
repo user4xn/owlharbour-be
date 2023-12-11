@@ -127,3 +127,34 @@ func (h *handler) harbourStatistic(c *gin.Context) {
 	response := util.APIResponse("Success get data statistic", http.StatusOK, "success", data)
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *handler) terrainChart(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	data, err := h.service.TerrainChart(ctx)
+	if err != nil {
+		response := util.APIResponse(err.Error(), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Success get data terrain chart", http.StatusOK, "success", data)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *handler) logsChart(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	dateStart := c.DefaultQuery("start_date", "")
+	dateEnd := c.DefaultQuery("end_date", "")
+
+	data, err := h.service.LogsChart(ctx, dateStart, dateEnd)
+	if err != nil {
+		response := util.APIResponse(err.Error(), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Success get data logs chart", http.StatusOK, "success", data)
+	c.JSON(http.StatusOK, response)
+}

@@ -29,4 +29,6 @@ func (h *handler) Router(g *gin.RouterGroup) {
 
 	g.Use(middleware.Authenticate())
 	g.GET("/statistic", h.harbourStatistic)
+	g.GET("/terrain-chart", h.terrainChart)
+	g.GET("/logs-chart", h.logsChart)
 }

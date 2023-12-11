@@ -17,6 +17,8 @@ type Service interface {
 	CountShip(ctx context.Context) (int64, error)
 	GetShipsInBatch(ctx context.Context, start int, end int) ([]dto.ShipWebsocketResponse, error)
 	GetStatistic(ctx context.Context) (*dto.DashboardStatisticResponse, error)
+	TerrainChart(ctx context.Context) (*dto.ShipTerrainResponse, error)
+	LogsChart(ctx context.Context, startDate string, endDate string) (*dto.LogsStatisticResponse, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -25,6 +27,50 @@ func NewService(f *factory.Factory) Service {
 		shipRepository:           f.ShipRepository,
 		pairingRequestRepository: f.PairingRequestRepository,
 	}
+}
+
+func (s *service) LogsChart(ctx context.Context, startDate string, endDate string) (*dto.LogsStatisticResponse, error) {
+	checkin, err := s.shipRepository.CountShipByStatus(ctx, startDate, endDate, "checkin")
+	if err != nil {
+		return nil, err
+	}
+
+	checkout, err := s.shipRepository.CountShipByStatus(ctx, startDate, endDate, "checkout")
+	if err != nil {
+		return nil, err
+	}
+
+	fraud, err := s.shipRepository.CountShipFraud(ctx, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	res := dto.LogsStatisticResponse{
+		CheckIN: checkin,
+		CheckOUT: checkout,
+		Fraud: fraud,
+	}
+		
+	return &res, nil
+}
+
+func (s *service) TerrainChart(ctx context.Context) (*dto.ShipTerrainResponse, error) {
+	onGorund, err := s.shipRepository.CountShipByTerrain(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	onWater, err := s.shipRepository.CountShipByTerrain(ctx, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	res := dto.ShipTerrainResponse{
+		OnGround: onGorund,
+		OnWater: onWater,
+	}
+		
+	return &res, nil
 }
 
 func (s *service) CountShip(ctx context.Context) (int64, error) {
