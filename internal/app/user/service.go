@@ -152,15 +152,15 @@ func (s *service) GetAllUsers(ctx context.Context, request dto.UserListParam) ([
 	if err != nil {
 		return nil, err
 	}
-
 	for _, user := range users {
 		user := dto.AllUser{
-			ID:        user.ID,
-			Name:      user.Name,
-			Email:     user.Email,
-			Role:      user.Role,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
+			ID:              user.ID,
+			Name:            user.Name,
+			Email:           user.Email,
+			Role:            user.Role,
+			EmailVerifiedAt: user.EmailVerifiedAt,
+			CreatedAt:       user.CreatedAt,
+			UpdatedAt:       user.UpdatedAt,
 		}
 		AllUser = append(AllUser, user)
 	}
@@ -225,6 +225,28 @@ func (s *service) StoreUser(ctx context.Context, payload dto.PayloadStoreUser) e
 			return constants.ErrorHashPassword
 		}
 
+		tmpl, err := template.ParseFiles("pkg/resource/email_verify.html")
+
+		emailByte := []byte(payload.Email)
+		encodedString := base64.StdEncoding.EncodeToString(emailByte)
+		urlVerify := "/api/v1/user/verify/email/"
+
+		data := struct {
+			Name string
+			Url  string
+		}{
+			Name: payload.Name,
+			Url:  util.GetEnv("APP_URL", "fallback") + ":" + util.GetEnv("APP_PORT", "fallback") + urlVerify + encodedString,
+		}
+
+		var tplBuffer = new(bytes.Buffer)
+		errExecute := tmpl.Execute(tplBuffer, data)
+		if errExecute != nil {
+			fmt.Println("Error executing template:", err)
+			return constants.DuplicateStoreUser
+		}
+
+		go SendMail(payload.Email, "Verifikasi Akun Simpel", tplBuffer.String())
 		dataStore := model.User{
 			Name:     payload.Name,
 			Email:    payload.Email,
@@ -232,7 +254,6 @@ func (s *service) StoreUser(ctx context.Context, payload dto.PayloadStoreUser) e
 			Role:     model.RoleType(payload.Role),
 		}
 		s.UserRepository.Store(ctx, dataStore)
-
 		return nil
 	}
 

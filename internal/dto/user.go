@@ -81,11 +81,12 @@ type (
 	}
 
 	AllUser struct {
-		ID        int    `json:"id"`
-		Email     string `json:"email"`
-		Name      string `json:"name"`
-		Role      string `json:"role"`
-		CreatedAt string `json:"created_at"`
-		UpdatedAt string `json:"updated_at"`
+		ID              int    `json:"id"`
+		Email           string `json:"email"`
+		Name            string `json:"name"`
+		Role            string `json:"role"`
+		EmailVerifiedAt string `json:"email_verified_at"`
+		CreatedAt       string `json:"created_at"`
+		UpdatedAt       string `json:"updated_at"`
 	}
 )
