@@ -11,7 +11,7 @@ type (
 	}
 
 	PairingActionRequest struct {
-		PairingID int    `json:"pairing_id" binding:"required"`
+		PairingID string `json:"pairing_id" binding:"required"`
 		Status    string `json:"status" binding:"required"`
 	}
 

@@ -10,6 +10,8 @@ import (
 	"simpel-api/pkg/helper"
 	"simpel-api/pkg/log"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -71,60 +73,87 @@ func (s *service) PairingRequestList(ctx context.Context, request dto.PairingLis
 }
 
 func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRequest) error {
+	idArray := strings.Split(request.PairingID, ",")
+	wg := sync.WaitGroup{}
+	var failures sync.Mutex
 
-	res, err := s.pairingRequestRepository.UpdatedPairingStatus(ctx, request)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("invalid pairing_id")
-		}
-		return err
-	}
+	for _, id := range idArray {
+		wg.Add(1)
 
-	pairingData := dto.PairingRequestResponse{
-		ID:              res.ID,
-		ShipName:        res.ShipName,
-		Phone:           res.Phone,
-		ResponsibleName: res.ResponsibleName,
-		DeviceID:        res.DeviceID,
-		FirebaseToken:   res.FirebaseToken,
-		Status:          res.Status,
-		CreatedAt:       res.CreatedAt,
-	}
-
-	appInfo, err := s.appRepository.AppInfo(ctx)
-	if err != nil {
-		return err
-	}
-
-	if request.Status == "approved" {
-		err = s.shipRepository.StoreNewShip(ctx, pairingData)
+		idInt, err := strconv.Atoi(id)
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid pairing_id: %v", err)
 		}
 
-		notificationData := map[string]interface{}{
-			"title": "SIMPEL - PAIRING APPROVED",
-			"body":  "Pairing request anda telah disetujui, kini device kapal anda sudah terhubung dengan Pelabuhan " + appInfo.HarbourName,
-		}
-		tokens := []string{res.FirebaseToken}
+		go func(idInt int, id string) error {
+			defer wg.Done()
+    		defer failures.Unlock()
+			failures.Lock()
 
-		_, err := helper.PushNotification(notificationData, tokens)
-		if err != nil {
-			fmt.Println(err)
-		}
-	} else {
-		notificationData := map[string]interface{}{
-			"title": "SIMPEL - PAIRING REJECTED",
-			"body":  "Mohon maaf pairing request device anda dengan Pelabuhan " + appInfo.HarbourName + "ditolak, anda dapat mengajukan kembali di lain waktu",
-		}
-		tokens := []string{res.FirebaseToken}
+			res, err := s.pairingRequestRepository.UpdatedPairingStatus(ctx, idInt, request.Status)
+			if err != nil {
+				if err == gorm.ErrRecordNotFound {
+                    err = fmt.Errorf("invalid pairing_id: %s", id)
+                }
 
-		_, err := helper.PushNotification(notificationData, tokens)
-		if err != nil {
-			fmt.Println(err)
-		}
+				log.Logging("Failed to update pairing status, Err: %s", err.Error()).Error()
+				return err
+			}
+
+			pairingData := dto.PairingRequestResponse{
+				ID:              res.ID,
+				ShipName:        res.ShipName,
+				Phone:           res.Phone,
+				ResponsibleName: res.ResponsibleName,
+				DeviceID:        res.DeviceID,
+				FirebaseToken:   res.FirebaseToken,
+				Status:          res.Status,
+				CreatedAt:       res.CreatedAt,
+			}
+
+			appInfo, err := s.appRepository.AppInfo(ctx)
+			if err != nil {
+				return err
+			}
+
+			if request.Status == "approved" {
+				err = s.shipRepository.StoreNewShip(ctx, pairingData)
+				if err != nil {
+					log.Logging("Failed store new ship, ID: %d, Err: %s", idInt, err.Error()).Error()
+
+					return err
+				}
+
+				notificationData := map[string]interface{}{
+					"title": "SIMPEL - PAIRING APPROVED",
+					"body":  "Pairing request anda telah disetujui, kini device kapal anda sudah terhubung dengan Pelabuhan " + appInfo.HarbourName,
+				}
+				tokens := []string{res.FirebaseToken}
+
+				_, err := helper.PushNotification(notificationData, tokens)
+				if err != nil {
+					log.Logging("Failed send notification, Err: %s", err.Error()).Error()
+				}
+			} else {
+				notificationData := map[string]interface{}{
+					"title": "SIMPEL - PAIRING REJECTED",
+					"body":  "Mohon maaf pairing request device anda dengan Pelabuhan " + appInfo.HarbourName + "ditolak, anda dapat mengajukan kembali di lain waktu",
+				}
+				tokens := []string{res.FirebaseToken}
+
+				_, err := helper.PushNotification(notificationData, tokens)
+				if err != nil {
+					log.Logging("Failed send notification, Err: %s", err.Error()).Error()
+				}
+			}
+
+			return nil
+		}(idInt, id)
 	}
 
+	wg.Wait()
+	failures.Lock()
+	defer failures.Unlock()
 	return nil
 }
 
@@ -394,7 +423,7 @@ func (s *service) PairingDetailByDevice(ctx context.Context, DeviceID string) (*
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return res, nil
 }
 
@@ -402,15 +431,15 @@ func (s *service) ShipDockLog(ctx context.Context, request dto.ShipLogParam, shi
 	var id int
 
 	switch shipOrDeviceID.(type) {
-		case int:
-			id = shipOrDeviceID.(int)
-		case string:
-			ship, err := s.shipRepository.ShipByDevice(ctx, shipOrDeviceID.(string))
-			if err != nil {
-				return nil, err
-			}
+	case int:
+		id = shipOrDeviceID.(int)
+	case string:
+		ship, err := s.shipRepository.ShipByDevice(ctx, shipOrDeviceID.(string))
+		if err != nil {
+			return nil, err
+		}
 
-			id = ship.ID
+		id = ship.ID
 	}
 
 	dockLogs, err := s.shipRepository.ShipDockedLogs(ctx, id, &request)
@@ -419,7 +448,7 @@ func (s *service) ShipDockLog(ctx context.Context, request dto.ShipLogParam, shi
 	}
 
 	res := &dto.ShipDockLogResponse{
-		ID: id,
+		ID:          id,
 		DockingLogs: dockLogs,
 	}
 
@@ -430,15 +459,15 @@ func (s *service) ShipLocationLog(ctx context.Context, request dto.ShipLogParam,
 	var id int
 
 	switch shipOrDeviceID.(type) {
-		case int:
-			id = shipOrDeviceID.(int)
-		case string:
-			ship, err := s.shipRepository.ShipByDevice(ctx, shipOrDeviceID.(string))
-			if err != nil {
-				return nil, err
-			}
+	case int:
+		id = shipOrDeviceID.(int)
+	case string:
+		ship, err := s.shipRepository.ShipByDevice(ctx, shipOrDeviceID.(string))
+		if err != nil {
+			return nil, err
+		}
 
-			id = ship.ID
+		id = ship.ID
 	}
 
 	locationLogs, err := s.shipRepository.ShipLocationLogs(ctx, id, &request)
@@ -447,7 +476,7 @@ func (s *service) ShipLocationLog(ctx context.Context, request dto.ShipLogParam,
 	}
 
 	res := &dto.ShipLocationLogResponse{
-		ID: id,
+		ID:           id,
 		LocationLogs: locationLogs,
 	}
 

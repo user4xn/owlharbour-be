@@ -17,7 +17,7 @@ import (
 type PairingRequest interface {
 	StorePairingRequests(ctx context.Context, request dto.PairingRequest) error
 	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
-	UpdatedPairingStatus(ctx context.Context, request dto.PairingActionRequest) (*dto.PairingRequestResponse, error)
+	UpdatedPairingStatus(ctx context.Context, id int, status string) (*dto.PairingRequestResponse, error)
 	PairingDetailByDevice(ctx context.Context, DeviceID string) (*dto.DetailPairingResponse, error)
 }
 
@@ -151,11 +151,11 @@ func (r *pairingRequest) PairingRequestList(ctx context.Context, request dto.Pai
 	return pairingList, nil
 }
 
-func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, request dto.PairingActionRequest) (*dto.PairingRequestResponse, error) {
+func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, id int, status string) (*dto.PairingRequestResponse, error) {
 	tx := r.Db.WithContext(ctx).Begin()
 
 	var pairing model.PairingRequest
-	err := tx.First(&pairing, request.PairingID).Error
+	err := tx.First(&pairing, id).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -167,10 +167,10 @@ func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, request dto.P
 	}
 
 	pairingModel := model.PairingRequest{
-		Status: model.PairingStatus(request.Status),
+		Status: model.PairingStatus(status),
 	}
 
-	err = tx.Model(&model.PairingRequest{}).Where("id = ?", request.PairingID).Updates(&pairingModel).Error
+	err = tx.Model(&model.PairingRequest{}).Where("id = ?", id).Updates(&pairingModel).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -183,7 +183,7 @@ func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, request dto.P
 		ResponsibleName: pairing.ResponsibleName,
 		DeviceID:        pairing.DeviceID,
 		FirebaseToken:   pairing.FirebaseToken,
-		Status:          request.Status,
+		Status:          status,
 		CreatedAt:       pairing.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 
