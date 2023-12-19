@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"simpel-api/internal/dto"
 	"simpel-api/internal/factory"
+	"simpel-api/internal/model"
 	"simpel-api/pkg/util"
 	"strconv"
 	"strings"
@@ -146,16 +147,24 @@ func (h *handler) ShipList(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) ShipByDevice(c *gin.Context) {
+func (h *handler) ShipByAuth(c *gin.Context) {
 	ctx := c.Request.Context()
-	deviceID := c.Param("device_id")
-	if deviceID == "" {
-		response := util.APIResponse("Invalid device_id", http.StatusBadRequest, "failed", nil)
-		c.JSON(http.StatusBadRequest, response)
+
+	user, ok := c.Get("user")
+	if !ok {
+		response := util.APIResponse("User information not found", http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
-	shipDetail, err := h.service.ShipByDevice(ctx, deviceID)
+	authUser, ok := user.(model.User)
+	if !ok {
+		response := util.APIResponse("Invalid user type", http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	shipDetail, err := h.service.ShipByAuth(ctx, authUser)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			response := util.APIResponse("invalid device id, no ship data", http.StatusBadRequest, "failed", nil)
@@ -274,19 +283,19 @@ func (h *handler) ShipDetail(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) PairingDetailByDevice(c *gin.Context) {
+func (h *handler) PairingDetailByUsername(c *gin.Context) {
 	ctx := c.Request.Context()
-	deviceID := c.Param("device_id")
-	if deviceID == "" {
-		response := util.APIResponse("Invalid device_id", http.StatusBadRequest, "failed", nil)
+	username := c.Query("username")
+	if username == "" {
+		response := util.APIResponse("Invalid username", http.StatusBadRequest, "failed", nil)
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
-	shipDetail, err := h.service.PairingDetailByDevice(ctx, deviceID)
+	shipDetail, err := h.service.PairingDetailByUsername(ctx, username)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			response := util.APIResponse("invalid device_id, no pairing data", http.StatusBadRequest, "failed", nil)
+			response := util.APIResponse("invalid username, no pairing data", http.StatusBadRequest, "failed", nil)
 			c.JSON(http.StatusBadRequest, response)
 		} else {
 			response := util.APIResponse("Failed to retrieve detail pairing data: "+err.Error(), http.StatusInternalServerError, "failed", nil)
@@ -315,12 +324,12 @@ func (h *handler) ShipDockLog(c *gin.Context) {
 	if limit == 0 {
 		limit = 10
 	}
-	
+
 	param := dto.ShipLogParam{
-		Offset: offset,
-		Limit:  limit,
+		Offset:    offset,
+		Limit:     limit,
 		StartDate: dateStart,
-		EndDate: dateEnd,
+		EndDate:   dateEnd,
 	}
 
 	res, err := h.service.ShipDockLog(ctx, param, shipID)
@@ -350,12 +359,12 @@ func (h *handler) ShipLocationLog(c *gin.Context) {
 	if limit == 0 {
 		limit = 10
 	}
-	
+
 	param := dto.ShipLogParam{
-		Offset: offset,
-		Limit:  limit,
+		Offset:    offset,
+		Limit:     limit,
 		StartDate: dateStart,
-		EndDate: dateEnd,
+		EndDate:   dateEnd,
 	}
 
 	res, err := h.service.ShipLocationLog(ctx, param, shipID)
@@ -384,12 +393,12 @@ func (h *handler) ShipDockLogByDevice(c *gin.Context) {
 	if limit == 0 {
 		limit = 10
 	}
-	
+
 	param := dto.ShipLogParam{
-		Offset: offset,
-		Limit:  limit,
+		Offset:    offset,
+		Limit:     limit,
 		StartDate: dateStart,
-		EndDate: dateEnd,
+		EndDate:   dateEnd,
 	}
 
 	res, err := h.service.ShipDockLog(ctx, param, deviceID)
@@ -418,12 +427,12 @@ func (h *handler) ShipLocationLogByDevice(c *gin.Context) {
 	if limit == 0 {
 		limit = 10
 	}
-	
+
 	param := dto.ShipLogParam{
-		Offset: offset,
-		Limit:  limit,
+		Offset:    offset,
+		Limit:     limit,
 		StartDate: dateStart,
-		EndDate: dateEnd,
+		EndDate:   dateEnd,
 	}
 
 	res, err := h.service.ShipLocationLog(ctx, param, deviceID)

@@ -11,7 +11,9 @@ const (
 
 type (
 	PayloadLogin struct {
-		Email    string `json:"email" binding:"required"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		DeviceID string `json:"device_id"`
 		Password string `json:"password" binding:"required"`
 	}
 
@@ -88,5 +90,14 @@ type (
 		EmailVerifiedAt string `json:"email_verified_at"`
 		CreatedAt       string `json:"created_at"`
 		UpdatedAt       string `json:"updated_at"`
+	}
+
+	AuthUser struct {
+		ID       int    `json:"id"`
+		Username string `json:"username"`
+		Name     string `json:"name"`
+		Role     string `json:"role"`
+		JWTToken string `json:"jwt_token"`
+		DeviceID string `json:"device_id"`
 	}
 )

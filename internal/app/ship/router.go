@@ -12,13 +12,13 @@ func (h *handler) Router(g *gin.RouterGroup) {
 	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
 
 	g.POST("/pairing", h.PairingShip)
-	g.GET("/pairing/detail/:device_id", h.PairingDetailByDevice)
-	g.GET("/by-device/:device_id", h.ShipByDevice)
-	g.GET("/by-device/dock-log/:device_id", h.ShipDockLogByDevice)
-	g.GET("/by-device/location-log/:device_id", h.ShipLocationLogByDevice)
-	g.POST("/record-log", rateLimiter.Limit(), h.RecordLog)
+	g.GET("/pairing/detail", h.PairingDetailByUsername)
 
 	g.Use(middleware.Authenticate())
+	g.GET("/mobile/profile", h.ShipByAuth)
+	g.GET("/mobile/dock-log/:device_id", h.ShipDockLogByDevice)
+	g.GET("/mobile/location-log/:device_id", h.ShipLocationLogByDevice)
+	g.POST("/record-log", rateLimiter.Limit(), h.RecordLog)
 	g.GET("/pairing-request", h.PairingRequestList)
 	g.PUT("/pairing/action", h.PairingAction)
 

@@ -8,6 +8,7 @@ import (
 
 func (h *handler) Router(g *gin.RouterGroup) {
 	g.POST("/login", h.Login)
+	g.POST("mobile/login", h.LoginMobile)
 	g.GET("/verify/email/:base_64", h.VerifyEmail)
 
 	g.Use(middleware.Authenticate())

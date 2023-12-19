@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"simpel-api/internal/dto"
 	"simpel-api/internal/model"
+	"simpel-api/pkg/constants"
 	"simpel-api/pkg/helper"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -18,7 +20,7 @@ type PairingRequest interface {
 	StorePairingRequests(ctx context.Context, request dto.PairingRequest) error
 	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
 	UpdatedPairingStatus(ctx context.Context, id int, status string) (*dto.PairingRequestResponse, error)
-	PairingDetailByDevice(ctx context.Context, DeviceID string) (*dto.DetailPairingResponse, error)
+	PairingDetailByUsername(ctx context.Context, username string) (*dto.DetailPairingResponse, error)
 }
 
 type pairingRequest struct {
@@ -49,9 +51,17 @@ func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.P
 		}
 	}
 
+	password := []byte(request.Password)
+	hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	if err != nil {
+		return constants.ErrorHashPassword
+	}
+
 	pairingModel := model.PairingRequest{
 		Name:            request.ShipName,
 		Phone:           request.Phone,
+		Username:        request.Username,
+		Password:        string(hashedPassword),
 		ResponsibleName: request.ResponsibleName,
 		DeviceID:        request.DeviceID,
 		FirebaseToken:   request.FirebaseToken,
@@ -126,6 +136,8 @@ func (r *pairingRequest) PairingRequestList(ctx context.Context, request dto.Pai
 			ID:              e.ID,
 			ShipName:        e.Name,
 			Phone:           e.Phone,
+			Username:        e.Username,
+			Password:        "********",
 			ResponsibleName: e.ResponsibleName,
 			DeviceID:        e.DeviceID,
 			FirebaseToken:   e.FirebaseToken,
@@ -180,6 +192,8 @@ func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, id int, statu
 		ID:              pairing.ID,
 		ShipName:        pairing.Name,
 		Phone:           pairing.Phone,
+		Username:        pairing.Username,
+		Password:        pairing.Password,
 		ResponsibleName: pairing.ResponsibleName,
 		DeviceID:        pairing.DeviceID,
 		FirebaseToken:   pairing.FirebaseToken,
@@ -201,11 +215,11 @@ func (r *pairingRequest) UpdatedPairingStatus(ctx context.Context, id int, statu
 	return &pairingData, nil
 }
 
-func (r *pairingRequest) PairingDetailByDevice(ctx context.Context, DeviceID string) (*dto.DetailPairingResponse, error) {
+func (r *pairingRequest) PairingDetailByUsername(ctx context.Context, username string) (*dto.DetailPairingResponse, error) {
 	tx := r.Db.WithContext(ctx).Begin()
 
 	var pairing model.PairingRequest
-	err := tx.Where("device_id = ?", DeviceID).Order("created_at DESC").First(&pairing).Error
+	err := tx.Where("username = ?", username).Order("created_at DESC").First(&pairing).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -215,6 +229,7 @@ func (r *pairingRequest) PairingDetailByDevice(ctx context.Context, DeviceID str
 		ShipName:       pairing.Name,
 		ReponsibleName: pairing.ResponsibleName,
 		Phone:          pairing.Phone,
+		Username:       pairing.Username,
 		DeviceID:       pairing.DeviceID,
 		Status:         string(pairing.Status),
 		SubmittedAt:    pairing.CreatedAt.Format("2006-01-02 15:04:05"),
@@ -227,7 +242,7 @@ func (r *pairingRequest) PairingDetailByDevice(ctx context.Context, DeviceID str
 	}
 
 	var historyPairing []model.PairingRequest
-	if err := tx.Where("device_id = ? AND status != 'pending'", DeviceID).Find(&historyPairing).Error; err != nil {
+	if err := tx.Where("username = ? AND status != 'pending'", username).Find(&historyPairing).Error; err != nil {
 		tx.Rollback()
 		return nil, err
 	}
@@ -238,6 +253,7 @@ func (r *pairingRequest) PairingDetailByDevice(ctx context.Context, DeviceID str
 			ShipName:       history.Name,
 			ReponsibleName: history.ResponsibleName,
 			Phone:          history.Phone,
+			Username:       history.Username,
 			Status:         string(history.Status),
 			SubmittedAt:    history.CreatedAt.Format("2006-01-02 15:04:05"),
 			RespondedAt:    history.UpdatedAt.Format("2006-01-02 15:04:05"),

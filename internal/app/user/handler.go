@@ -36,7 +36,13 @@ func (h *handler) Login(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.LoginService(c, payload)
+	if payload.Email == "" {
+		response := util.APIResponse("Failed Login", http.StatusUnprocessableEntity, "failed", "please fill email")
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	data, err := h.service.LoginService(c, payload, false)
 	if err == constants.UserNotFound {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.UserNotFound), http.StatusBadRequest, "failed", nil)
 		c.JSON(http.StatusBadRequest, response)
@@ -63,6 +69,66 @@ func (h *handler) Login(c *gin.Context) {
 
 	if err == constants.UserNotVerifyEmail {
 		response := util.APIResponse(fmt.Sprintf("%s", constants.UserNotVerifyEmail), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err == constants.EmptyGenerateJwt {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.EmptyGenerateJwt), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Success Login", http.StatusOK, "success", data)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *handler) LoginMobile(c *gin.Context) {
+	var payload dto.PayloadLogin
+	if err := c.ShouldBind(&payload); err != nil {
+		errorMessage := gin.H{"errors": "please fill data"}
+		if err != io.EOF {
+			errors := util.FormatValidationError(err)
+			errorMessage = gin.H{"errors": errors}
+		}
+		response := util.APIResponse("Failed Login", http.StatusUnprocessableEntity, "failed", errorMessage)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	if payload.Username == "" {
+		response := util.APIResponse("Failed Login", http.StatusUnprocessableEntity, "failed", "please fill username")
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	if payload.DeviceID == "" {
+		response := util.APIResponse("Failed Login", http.StatusUnprocessableEntity, "failed", "please fill device_id")
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	data, err := h.service.LoginService(c, payload, true)
+	if err == constants.UserNotFound {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.UserNotFound), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err == constants.InvalidPassword {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.InvalidPassword), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err == constants.ErrorLoadLocationTime {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorLoadLocationTime), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err == constants.ErrorGenerateJwt {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.ErrorGenerateJwt), http.StatusBadRequest, "failed", nil)
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
@@ -150,7 +216,6 @@ func (h *handler) LogoutHandler(c *gin.Context) {
 
 	response := util.APIResponse("Success Logout", http.StatusOK, "success", nil)
 	c.JSON(http.StatusOK, response)
-	return
 }
 
 func (h *handler) DetailUser(c *gin.Context) {

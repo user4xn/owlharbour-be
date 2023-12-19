@@ -21,14 +21,15 @@ type service struct {
 	appRepository            repository.App
 	shipRepository           repository.Ship
 	pairingRequestRepository repository.PairingRequest
+	userRepository           repository.User
 }
 
 type Service interface {
 	PairingShip(ctx context.Context, request dto.PairingRequest) error
 	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
 	PairingAction(ctx context.Context, request dto.PairingActionRequest) error
-	PairingDetailByDevice(ctx context.Context, DeviceID string) (*dto.DetailPairingResponse, error)
-	ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipMobileDetailResponse, error)
+	PairingDetailByUsername(ctx context.Context, username string) (*dto.DetailPairingResponse, error)
+	ShipByAuth(ctx context.Context, authUser model.User) (*dto.ShipMobileDetailResponse, error)
 	ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error)
 	RecordLocationShip(ctx context.Context, request dto.ShipRecordRequest) error
 	UpdateShipDetail(ctx context.Context, request dto.ShipAddonDetailRequest) error
@@ -42,6 +43,7 @@ func NewService(f *factory.Factory) Service {
 		appRepository:            f.AppRepository,
 		shipRepository:           f.ShipRepository,
 		pairingRequestRepository: f.PairingRequestRepository,
+		userRepository:           f.UserRepository,
 	}
 }
 
@@ -87,28 +89,17 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 
 		go func(idInt int, id string) error {
 			defer wg.Done()
-    		defer failures.Unlock()
+			defer failures.Unlock()
 			failures.Lock()
 
 			res, err := s.pairingRequestRepository.UpdatedPairingStatus(ctx, idInt, request.Status)
 			if err != nil {
 				if err == gorm.ErrRecordNotFound {
-                    err = fmt.Errorf("invalid pairing_id: %s", id)
-                }
+					err = fmt.Errorf("invalid pairing_id: %s", id)
+				}
 
-				log.Logging("Failed to update pairing status, Err: %s", err.Error()).Error()
+				log.Logging("Failed to update pairing status (ID:%s), Err: %s", id, err.Error()).Error()
 				return err
-			}
-
-			pairingData := dto.PairingRequestResponse{
-				ID:              res.ID,
-				ShipName:        res.ShipName,
-				Phone:           res.Phone,
-				ResponsibleName: res.ResponsibleName,
-				DeviceID:        res.DeviceID,
-				FirebaseToken:   res.FirebaseToken,
-				Status:          res.Status,
-				CreatedAt:       res.CreatedAt,
 			}
 
 			appInfo, err := s.appRepository.AppInfo(ctx)
@@ -117,7 +108,39 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 			}
 
 			if request.Status == "approved" {
-				err = s.shipRepository.StoreNewShip(ctx, pairingData)
+				currentTime := time.Now()
+
+				dataStore := model.User{
+					Name:            res.ShipName,
+					Email:           "",
+					Username:        res.Username,
+					EmailVerifiedAt: &currentTime,
+					Password:        res.Password,
+					Role:            "User",
+				}
+				err := s.userRepository.Store(ctx, dataStore)
+				if err != nil {
+					log.Logging("Failed store ship user, Pairing ID: %d, Err: %s", idInt, err.Error()).Error()
+
+					return err
+				}
+
+				user, err := s.userRepository.FindOne(ctx, "id", "username = ?", res.Username)
+				if err != nil {
+					log.Logging("Failed get ship user, Pairing ID: %d, Err: %s", idInt, err.Error()).Error()
+
+					return err
+				}
+
+				pairingToShip := dto.PairingToNewShip{
+					ShipName:        res.ShipName,
+					ResponsibleName: res.ResponsibleName,
+					DeviceID:        res.DeviceID,
+					FirebaseToken:   res.FirebaseToken,
+					UserID:          user.ID,
+				}
+
+				err = s.shipRepository.StoreNewShip(ctx, pairingToShip)
 				if err != nil {
 					log.Logging("Failed store new ship, ID: %d, Err: %s", idInt, err.Error()).Error()
 
@@ -130,7 +153,7 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 				}
 				tokens := []string{res.FirebaseToken}
 
-				_, err := helper.PushNotification(notificationData, tokens)
+				_, err = helper.PushNotification(notificationData, tokens)
 				if err != nil {
 					log.Logging("Failed send notification, Err: %s", err.Error()).Error()
 				}
@@ -166,13 +189,13 @@ func (s *service) ShipList(ctx context.Context, request dto.ShipListParam) ([]dt
 	return res, nil
 }
 
-func (s *service) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipMobileDetailResponse, error) {
+func (s *service) ShipByAuth(ctx context.Context, authUser model.User) (*dto.ShipMobileDetailResponse, error) {
 	appInfo, err := s.appRepository.AppInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	ship, err := s.shipRepository.ShipByDevice(ctx, DeviceID)
+	ship, err := s.shipRepository.ShipByAuth(ctx, authUser)
 	if err != nil {
 		return nil, err
 	}
@@ -418,8 +441,8 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 	return res, nil
 }
 
-func (s *service) PairingDetailByDevice(ctx context.Context, DeviceID string) (*dto.DetailPairingResponse, error) {
-	res, err := s.pairingRequestRepository.PairingDetailByDevice(ctx, DeviceID)
+func (s *service) PairingDetailByUsername(ctx context.Context, username string) (*dto.DetailPairingResponse, error) {
+	res, err := s.pairingRequestRepository.PairingDetailByUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}

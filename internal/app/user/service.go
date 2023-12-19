@@ -11,6 +11,7 @@ import (
 	"simpel-api/internal/model"
 	"simpel-api/internal/repository"
 	"simpel-api/pkg/constants"
+	"simpel-api/pkg/helper"
 	"simpel-api/pkg/util"
 	"strconv"
 	"text/template"
@@ -19,16 +20,15 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
-
-	"gopkg.in/gomail.v2"
 )
 
 type service struct {
 	UserRepository repository.User
+	ShipRepository repository.Ship
 }
 
 type Service interface {
-	LoginService(ctx context.Context, payload dto.PayloadLogin) (dto.ReturnJwt, error)
+	LoginService(ctx context.Context, payload dto.PayloadLogin, is_mobile bool) (dto.ReturnJwt, error)
 	GetProfile(ctx context.Context, userSess any) dto.ProfileUser
 	GetAllUsers(ctx context.Context, request dto.UserListParam) ([]dto.AllUser, error)
 	DetailUser(ctx context.Context, userID int) (dto.DetailUser, error)
@@ -43,27 +43,36 @@ type Service interface {
 func NewService(f *factory.Factory) Service {
 	return &service{
 		UserRepository: f.UserRepository,
+		ShipRepository: f.ShipRepository,
 	}
 }
 
-func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (dto.ReturnJwt, error) {
+func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin, is_mobile bool) (dto.ReturnJwt, error) {
 	loc, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
 		return dto.ReturnJwt{}, constants.ErrorLoadLocationTime
 	}
 
-	user, err := s.UserRepository.FindOne(ctx, "id, email, name, password, email_verified_at, role", "email = ?", payload.Email)
+	param := "email = ?"
+	value := payload.Email
+
+	if is_mobile {
+		param = "username = ?"
+		value = payload.Username
+	}
+
+	user, err := s.UserRepository.FindOne(ctx, "id, email, name, password, email_verified_at, role", param, value)
 	if err != nil {
 		return dto.ReturnJwt{}, constants.UserNotFound
 	}
-
+	fmt.Println("sampe compare")
 	err = ComparePasswords(user.Password, payload.Password)
 	if err != nil {
 		fmt.Println(err)
 		return dto.ReturnJwt{}, constants.InvalidPassword
 	}
 
-	if user.EmailVerifiedAt == nil {
+	if user.EmailVerifiedAt == nil && !is_mobile {
 
 		tmpl, err := template.ParseFiles("pkg/resource/email_verify.html")
 		if err != nil {
@@ -90,11 +99,11 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 			return dto.ReturnJwt{}, constants.InvalidPassword
 		}
 
-		go SendMail(user.Email, "Verifikasi Akun Simpel", tplBuffer.String())
+		go helper.SendMail(user.Email, "Verifikasi Akun Simpel", tplBuffer.String())
 
 		return dto.ReturnJwt{}, constants.UserNotVerifyEmail
 	}
-
+	
 	secretKey := []byte(util.GetEnv("SECRET_KEY", "fallback"))
 
 	jwt, err := GenerateToken(secretKey, strconv.Itoa(user.ID), user.Email)
@@ -122,6 +131,20 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin) (d
 	if err != nil {
 		log.Println("Error updating jwt token:", err)
 		return dto.ReturnJwt{}, constants.ErrorGenerateJwt
+	}
+	
+	if is_mobile {
+		ship, err := s.ShipRepository.FindOne(ctx, "device_id", "user_id = ?", user.ID)
+		if err != nil {
+			return dto.ReturnJwt{}, err
+		}
+	
+		if ship.DeviceID != payload.DeviceID {
+			err = s.ShipRepository.UpdateShipDeviceID(ctx, payload.DeviceID, user.ID)
+			if err != nil {
+				return dto.ReturnJwt{}, err
+			}
+		}
 	}
 
 	jwtMode := util.GetEnv("JWT_MODE", "fallback")
@@ -246,7 +269,7 @@ func (s *service) StoreUser(ctx context.Context, payload dto.PayloadStoreUser) e
 			return constants.DuplicateStoreUser
 		}
 
-		go SendMail(payload.Email, "Verifikasi Akun Simpel", tplBuffer.String())
+		go helper.SendMail(payload.Email, "Verifikasi Akun Simpel", tplBuffer.String())
 		dataStore := model.User{
 			Name:     payload.Name,
 			Email:    payload.Email,
@@ -438,22 +461,4 @@ func GenerateToken(secretKey []byte, userID string, email string) (string, error
 	}
 
 	return tokenString, nil
-}
-
-func SendMail(to, subject, body string) error {
-	from := util.GetEnv("MAIL_USERNAME", "fallback")
-	password := util.GetEnv("MAIL_PASSWORD", "fallback")
-	msg := gomail.NewMessage()
-	msg.SetHeader("From", from)
-	msg.SetHeader("To", to)
-	msg.SetHeader("Subject", subject)
-	msg.SetBody("text/html", body)
-
-	d := gomail.NewDialer("smtp.gmail.com", 587, from, password)
-
-	if err := d.DialAndSend(msg); err != nil {
-		return err
-	}
-
-	return nil
 }

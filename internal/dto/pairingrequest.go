@@ -5,6 +5,8 @@ type (
 		HarbourCode     int    `json:"harbour_code" binding:"required"`
 		ShipName        string `json:"ship_name" binding:"required"`
 		Phone           string `json:"phone" binding:"required"`
+		Username        string `json:"username" binding:"required"`
+		Password        string `json:"password" binding:"required"`
 		ResponsibleName string `json:"responsible_name" binding:"required"`
 		DeviceID        string `json:"device_id" binding:"required"`
 		FirebaseToken   string `json:"firebase_token" binding:"required"`
@@ -19,11 +21,22 @@ type (
 		ID              int    `json:"id"`
 		ShipName        string `json:"ship_name"`
 		Phone           string `json:"phone"`
+		Username        string `json:"username"`
+		Password        string `json:"password"`
 		ResponsibleName string `json:"responsible_name"`
 		DeviceID        string `json:"device_id"`
 		FirebaseToken   string `json:"firebase_token"`
 		Status          string `json:"status"`
 		CreatedAt       string `json:"created_at"`
+	}
+
+	PairingToNewShip struct {
+		Phone           string `json:"phone"`
+		ResponsibleName string `json:"responsible_name"`
+		ShipName        string `json:"ship_name"`
+		DeviceID        string `json:"device_id"`
+		FirebaseToken   string `json:"firebase_token"`
+		UserID          int    `json:"user_id"`
 	}
 
 	PairingListParam struct {
@@ -37,6 +50,7 @@ type (
 		ShipName       string           `json:"ship_name"`
 		ReponsibleName string           `json:"responsible_name"`
 		Phone          string           `json:"phone"`
+		Username       string           `json:"username"`
 		DeviceID       string           `json:"device_id"`
 		Status         string           `json:"status"`
 		SubmittedAt    string           `json:"submitted_at"`
@@ -48,6 +62,7 @@ type (
 		ShipName       string `json:"ship_name"`
 		ReponsibleName string `json:"responsible_name"`
 		Phone          string `json:"phone"`
+		Username       string `json:"username"`
 		Status         string `json:"status"`
 		SubmittedAt    string `json:"submitted_at"`
 		RespondedAt    string `json:"responded_at"`

@@ -8,6 +8,7 @@ import (
 	"simpel-api/internal/dto"
 	"simpel-api/internal/model"
 	"simpel-api/pkg/helper"
+	"simpel-api/pkg/util"
 	"strings"
 	"time"
 
@@ -17,9 +18,10 @@ import (
 )
 
 type Ship interface {
-	StoreNewShip(ctx context.Context, request dto.PairingRequestResponse) error
+	StoreNewShip(ctx context.Context, request dto.PairingToNewShip) error
 	ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error)
 	ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipMobileDetailResponse, error)
+	ShipByAuth(ctx context.Context, authUser model.User) (*dto.ShipMobileDetailResponse, error)
 	ShipByID(ctx context.Context, ShipID int) (*model.Ship, error)
 	GetLastDockedLog(ctx context.Context, ShipID int) (*dto.ShipDockedLog, error)
 	StoreDockedLog(ctx context.Context, request dto.ShipDockedLogStore) error
@@ -38,6 +40,8 @@ type Ship interface {
 	CountShipByTerrain(ctx context.Context, onGround int) (int64, error)
 	CountShipByStatus(ctx context.Context, startDate string, endDate string, status string) (int64, error)
 	CountShipFraud(ctx context.Context, startDate string, endDate string) (int64, error)
+	FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.Ship, error)
+	UpdateShipDeviceID(ctx context.Context, deviceID string, user_id int) error
 }
 
 type ship struct {
@@ -54,9 +58,50 @@ func NewShipRepository(db *gorm.DB, redisClient *redis.Client) Ship {
 	}
 }
 
+func (r *ship) UpdateShipDeviceID(ctx context.Context, deviceID string, user_id int) error {
+	tx := r.Db.WithContext(ctx).Begin()
+
+	updateFields := map[string]interface{}{
+		"device_id": deviceID,
+	}
+
+	if err := tx.Model(&model.Ship{}).Where("user_id = ?", user_id).Updates(updateFields).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	cacheKey := []string{"ship_list-*", "ship_last_update"}
+
+	for i := range cacheKey {
+		if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey[i]); err != nil {
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (r *ship) FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.Ship, error) {
+	var res model.Ship
+
+	db := r.Db.WithContext(ctx).Model(model.Ship{})
+	db = util.SetSelectFields(db, selectedFields)
+
+	if err := db.Where(query, args...).Take(&res).Error; err != nil {
+		return model.Ship{}, err
+	}
+
+	return res, nil
+}
+
 func (r *ship) CountShipFraud(ctx context.Context, startDate string, endDate string) (int64, error) {
 	tx := r.Db.WithContext(ctx).Begin()
-	
+
 	query := tx.Model(&model.ShipLocationLog{})
 
 	var res int64
@@ -75,9 +120,9 @@ func (r *ship) CountShipFraud(ctx context.Context, startDate string, endDate str
 	return res, nil
 }
 
-func (r *ship) CountShipByStatus(ctx context.Context, startDate string, endDate string, status string) (int64, error)  {
+func (r *ship) CountShipByStatus(ctx context.Context, startDate string, endDate string, status string) (int64, error) {
 	tx := r.Db.WithContext(ctx).Begin()
-	
+
 	query := tx.Model(&model.Ship{})
 
 	var res int64
@@ -98,7 +143,7 @@ func (r *ship) CountShipByStatus(ctx context.Context, startDate string, endDate 
 
 func (r *ship) CountShipByTerrain(ctx context.Context, onGround int) (int64, error) {
 	tx := r.Db.WithContext(ctx).Begin()
-	
+
 	query := tx.Model(&model.Ship{})
 
 	var res int64
@@ -113,7 +158,7 @@ func (r *ship) CountShipByTerrain(ctx context.Context, onGround int) (int64, err
 	return res, nil
 }
 
-func (r *ship) StoreNewShip(ctx context.Context, request dto.PairingRequestResponse) error {
+func (r *ship) StoreNewShip(ctx context.Context, request dto.PairingToNewShip) error {
 	shipModel := model.Ship{
 		Name:            request.ShipName,
 		Phone:           request.Phone,
@@ -121,6 +166,7 @@ func (r *ship) StoreNewShip(ctx context.Context, request dto.PairingRequestRespo
 		DeviceID:        request.DeviceID,
 		FirebaseToken:   request.FirebaseToken,
 		Status:          "out of scope",
+		UserID:          request.UserID,
 	}
 
 	tx := r.Db.WithContext(ctx).Begin()
@@ -225,6 +271,37 @@ func (r *ship) ShipByDevice(ctx context.Context, DeviceID string) (*dto.ShipMobi
 
 	var ship model.Ship
 	err := tx.Where("device_id = ?", DeviceID).First(&ship).Error
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	shipDetail := dto.ShipMobileDetailResponse{
+		ID:              ship.ID,
+		ShipName:        ship.Name,
+		ResponsibleName: ship.ResponsibleName,
+		DeviceID:        ship.DeviceID,
+		CurrentLong:     ship.CurrentLong,
+		CurrentLat:      ship.CurrentLat,
+		FirebaseToken:   ship.FirebaseToken,
+		Status:          string(ship.Status),
+		OnGround:        ship.OnGround,
+		CreatedAt:       ship.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return &shipDetail, nil
+}
+
+func (r *ship) ShipByAuth(ctx context.Context, authUser model.User) (*dto.ShipMobileDetailResponse, error) {
+	tx := r.Db.WithContext(ctx).Begin()
+
+	var ship model.Ship
+	err := tx.Where("user_id = ?", authUser.ID).First(&ship).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, err
