@@ -2,6 +2,7 @@ package http
 
 import (
 	Dashboard "simpel-api/internal/app/dashboard"
+	Inspection "simpel-api/internal/app/inspection"
 	Report "simpel-api/internal/app/report"
 	Setting "simpel-api/internal/app/setting"
 	Ship "simpel-api/internal/app/ship"
@@ -37,7 +38,7 @@ func NewHttp(g *gin.Engine, f *factory.Factory) {
 		Rate:  time.Minute,
 		Limit: 100,
 	})
-	
+
 	limiter := ratelimit.RateLimiter(rate, &ratelimit.Options{
 		ErrorHandler: errorHandler,
 		KeyFunc:      keyFunc,
@@ -53,6 +54,7 @@ func NewHttp(g *gin.Engine, f *factory.Factory) {
 	Setting.NewHandler(f).Router(v1.Group("/setting"))
 	Ship.NewHandler(f).Router(v1.Group("/ship"))
 	User.NewHandler(f).Router(v1.Group("/user"))
+	Inspection.NewHandler(f).Router(v1.Group("/inspection"))
 }
 
 func Index(g *gin.Engine) {

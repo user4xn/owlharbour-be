@@ -41,7 +41,11 @@ type Ship interface {
 	CountShipByStatus(ctx context.Context, startDate string, endDate string, status string) (int64, error)
 	CountShipFraud(ctx context.Context, startDate string, endDate string) (int64, error)
 	FindOne(ctx context.Context, selectedFields string, query string, args ...any) (model.Ship, error)
+	FindOneDockedLog(ctx context.Context, selectedFields string, query string, args ...any) (model.ShipDockedLog, error)
 	UpdateShipDeviceID(ctx context.Context, deviceID string, user_id int) error
+	UpdateShipCheckup(ctx context.Context, request dto.ShipCheckupRequest, id int, data model.ShipDockedLog) error
+	NeedCheckupShip(ctx context.Context, request dto.NeedCheckupShipParam) ([]dto.NeedCheckupShipResponse, error)
+	LastestDockedShip(ctx context.Context, limit int) ([]dto.DashboardLastDockedShipResponse, error)
 }
 
 type ship struct {
@@ -56,6 +60,151 @@ func NewShipRepository(db *gorm.DB, redisClient *redis.Client) Ship {
 		RedisClient:  redisClient,
 		CacheEnabled: true,
 	}
+}
+
+func (r *ship) LastestDockedShip(ctx context.Context, limit int) ([]dto.DashboardLastDockedShipResponse, error) {
+	tx := r.Db.WithContext(ctx).Begin()
+
+	query := tx.Model(&model.ShipDockedLog{}).
+		Select("ship_docked_logs.*, ships.name as ship_name, ships.id as ship_id").
+		Joins("JOIN ships ON ship_docked_logs.ship_id = ships.id")
+
+	limitParam := 10
+	if limit != 0 {
+		limitParam = limit
+	}
+
+	query = query.Where("ship_docked_logs.status = ?", "checkin").
+		Limit(limitParam).
+		Order("ship_docked_logs.created_at DESC")
+
+	var result []struct {
+		model.ShipDockedLog
+		ShipName string `json:"ship_name"`
+	}
+
+	if err := query.Find(&result).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	var shipDock []dto.DashboardLastDockedShipResponse
+	for _, e := range result {
+		shipDock = append(shipDock, dto.DashboardLastDockedShipResponse{
+			ShipName:    e.ShipName,
+			CheckinDate: e.CreatedAt.Format("2006-01-02 15:04:05"),
+			IsInspected: e.IsInspected,
+			IsReported:  e.IsReported,
+		})
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return shipDock, nil
+}
+
+func (r *ship) NeedCheckupShip(ctx context.Context, request dto.NeedCheckupShipParam) ([]dto.NeedCheckupShipResponse, error) {
+	tx := r.Db.WithContext(ctx).Begin()
+
+	query := tx.Model(&model.ShipDockedLog{}).
+		Select("ship_docked_logs.*, ships.name as ship_name, ships.id as ship_id").
+		Joins("JOIN ships ON ship_docked_logs.ship_id = ships.id")
+
+	if request.Search != "" {
+		searchLower := strings.ToLower(request.Search)
+		query = query.Where("lower(ships.name) LIKE ?", "%"+searchLower+"%")
+	}
+
+	query = query.Where("(is_inspected = ? OR is_reported = ?) and ship_docked_logs.status = ?", 0, 0, "checkin").
+		Limit(request.Limit).
+		Offset(request.Offset).
+		Order("ship_docked_logs.created_at DESC")
+
+	var result []struct {
+		model.ShipDockedLog
+		ShipName string `json:"ship_name"`
+	}
+
+	if err := query.Find(&result).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	var shipDock []dto.NeedCheckupShipResponse
+	for _, e := range result {
+		shipDock = append(shipDock, dto.NeedCheckupShipResponse{
+			LogID:       e.ID,
+			ShipName:    e.ShipName,
+			Lat:         e.Lat,
+			Long:        e.Long,
+			CheckinDate: e.CreatedAt.Format("2006-01-02 15:04:05"),
+			IsInspected: e.IsInspected,
+			IsReported:  e.IsReported,
+		})
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return shipDock, nil
+}
+
+func (r *ship) UpdateShipCheckup(ctx context.Context, request dto.ShipCheckupRequest, id int, data model.ShipDockedLog) error {
+	tx := r.Db.WithContext(ctx).Begin()
+
+	isInspectedInt := data.IsInspected
+	isReportedInt := data.IsReported
+
+	if request.IsInspected {
+		isInspectedInt = 1
+	}
+
+	if request.IsReported {
+		isReportedInt = 1
+	}
+
+	updateFields := map[string]interface{}{
+		"is_inspected": isInspectedInt,
+		"is_reported":  isReportedInt,
+	}
+
+	if err := tx.Debug().Model(&model.ShipDockedLog{}).Where("id = ?", id).Updates(updateFields).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	cacheKey := []string{"ship_list-*", "ship_last_update"}
+
+	for i := range cacheKey {
+		if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey[i]); err != nil {
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (r *ship) FindOneDockedLog(ctx context.Context, selectedFields string, query string, args ...any) (model.ShipDockedLog, error) {
+	var res model.ShipDockedLog
+
+	db := r.Db.WithContext(ctx).Model(model.ShipDockedLog{})
+	db = util.SetSelectFields(db, selectedFields)
+
+	if err := db.Where(query, args...).Take(&res).Error; err != nil {
+		return model.ShipDockedLog{}, err
+	}
+
+	return res, nil
 }
 
 func (r *ship) UpdateShipDeviceID(ctx context.Context, deviceID string, user_id int) error {
@@ -358,10 +507,12 @@ func (r *ship) StoreDockedLog(ctx context.Context, request dto.ShipDockedLogStor
 	tx := r.Db.WithContext(ctx).Begin()
 
 	dockedModel := model.ShipDockedLog{
-		ShipID: request.ShipID,
-		Long:   request.Long,
-		Lat:    request.Lat,
-		Status: model.ShipStatus(request.Status),
+		ShipID:      request.ShipID,
+		Long:        request.Long,
+		Lat:         request.Lat,
+		Status:      model.ShipStatus(request.Status),
+		IsInspected: 0,
+		IsReported:  0,
 	}
 
 	if err := tx.Create(&dockedModel).Error; err != nil {
@@ -498,7 +649,7 @@ func (r *ship) ShipByID(ctx context.Context, ShipID int) (*model.Ship, error) {
 
 func (r *ship) ShipDockedLogs(ctx context.Context, ShipID int, request *dto.ShipLogParam) ([]dto.DockLogsShip, error) {
 	tx := r.Db.WithContext(ctx).Begin()
-	fmt.Println(request)
+
 	var logs []model.ShipDockedLog
 	query := tx.Where("ship_id = ?", ShipID).Order("created_at DESC")
 

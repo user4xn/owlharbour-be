@@ -34,14 +34,12 @@ func (s *service) GetSetting(ctx context.Context) (dto.GetDataSetting, error) {
 	getGeofance, err := s.AppRepository.GetPolygon(ctx)
 	if err != nil {
 		data := dto.GetDataSetting{
-			HarbourCode:     appsetting.HarbourCode,
-			HarbourName:     appsetting.HarbourName,
-			Mode:            appsetting.Mode.String(),
-			ApkMinVersion:   appsetting.ApkMinVersion,
-			Interval:        appsetting.Interval,
-			Range:           appsetting.Range,
-			ApkDownloadLink: appsetting.ApkDownloadLink,
-			Geofences:       nil,
+			HarbourCode: appsetting.HarbourCode,
+			HarbourName: appsetting.HarbourName,
+			Mode:        appsetting.Mode.String(),
+			Interval:    appsetting.Interval,
+			Range:       appsetting.Range,
+			Geofences:   nil,
 		}
 		return data, nil
 	}
@@ -56,14 +54,12 @@ func (s *service) GetSetting(ctx context.Context) (dto.GetDataSetting, error) {
 	}
 
 	data := dto.GetDataSetting{
-		HarbourCode:     appsetting.HarbourCode,
-		HarbourName:     appsetting.HarbourName,
-		Mode:            appsetting.Mode.String(),
-		ApkMinVersion:   appsetting.ApkMinVersion,
-		Interval:        appsetting.Interval,
-		Range:           appsetting.Range,
-		ApkDownloadLink: appsetting.ApkDownloadLink,
-		Geofences:       geofences,
+		HarbourCode: appsetting.HarbourCode,
+		HarbourName: appsetting.HarbourName,
+		Mode:        appsetting.Mode.String(),
+		Interval:    appsetting.Interval,
+		Range:       appsetting.Range,
+		Geofences:   geofences,
 	}
 
 	return data, nil
@@ -78,14 +74,12 @@ func (s *service) GetSettingWeb(ctx context.Context) (dto.GetDataSettingWeb, err
 	getGeofance, err := s.AppRepository.GetPolygon(ctx)
 	if err != nil {
 		data := dto.GetDataSettingWeb{
-			HarbourCode:     appsetting.HarbourCode,
-			HarbourName:     appsetting.HarbourName,
-			Mode:            appsetting.Mode.String(),
-			ApkMinVersion:   appsetting.ApkMinVersion,
-			Interval:        appsetting.Interval,
-			Range:           appsetting.Range,
-			ApkDownloadLink: appsetting.ApkDownloadLink,
-			Geofences:       nil,
+			HarbourCode: appsetting.HarbourCode,
+			HarbourName: appsetting.HarbourName,
+			Mode:        appsetting.Mode.String(),
+			Interval:    appsetting.Interval,
+			Range:       appsetting.Range,
+			Geofences:   nil,
 		}
 		return data, nil
 	}
@@ -99,14 +93,12 @@ func (s *service) GetSettingWeb(ctx context.Context) (dto.GetDataSettingWeb, err
 		geofences = append(geofences, dataGeofance)
 	}
 	data := dto.GetDataSettingWeb{
-		HarbourCode:     appsetting.HarbourCode,
-		HarbourName:     appsetting.HarbourName,
-		Mode:            appsetting.Mode.String(),
-		ApkMinVersion:   appsetting.ApkMinVersion,
-		Interval:        appsetting.Interval,
-		Range:           appsetting.Range,
-		ApkDownloadLink: appsetting.ApkDownloadLink,
-		Geofences:       geofences,
+		HarbourCode: appsetting.HarbourCode,
+		HarbourName: appsetting.HarbourName,
+		Mode:        appsetting.Mode.String(),
+		Interval:    appsetting.Interval,
+		Range:       appsetting.Range,
+		Geofences:   geofences,
 	}
 
 	return data, nil
@@ -115,25 +107,21 @@ func (s *service) CreateOrUpdate(ctx context.Context, payload dto.PayloadStoreSe
 	appsetting, err := s.AppRepository.FindLatestSetting(ctx, "harbour_code")
 	if err != nil {
 		dataStore := model.AppSetting{
-			HarbourCode:     payload.HarbourCode,
-			HarbourName:     payload.HarbourName,
-			Mode:            model.ModeType(payload.Mode),
-			ApkMinVersion:   payload.ApkMinVersion,
-			Interval:        payload.Interval,
-			Range:           payload.Range,
-			ApkDownloadLink: payload.ApkDownloadLink,
+			HarbourCode: payload.HarbourCode,
+			HarbourName: payload.HarbourName,
+			Mode:        model.ModeType(payload.Mode),
+			Interval:    payload.Interval,
+			Range:       payload.Range,
 		}
 
 		s.AppRepository.StoreSetting(ctx, dataStore)
 	} else {
 		update := model.AppSetting{
-			HarbourCode:     payload.HarbourCode,
-			HarbourName:     payload.HarbourName,
-			ApkMinVersion:   payload.ApkMinVersion,
-			Mode:            model.ModeType(payload.Mode),
-			Interval:        payload.Interval,
-			Range:           payload.Range,
-			ApkDownloadLink: payload.ApkDownloadLink,
+			HarbourCode: payload.HarbourCode,
+			HarbourName: payload.HarbourName,
+			Mode:        model.ModeType(payload.Mode),
+			Interval:    payload.Interval,
+			Range:       payload.Range,
 		}
 
 		s.AppRepository.UpsertSetting(ctx, &update, "harbour_code,harbour_name,mode,apk_min_version,interval,range,apk_download_link,updated_at", "harbour_code = ?", appsetting.HarbourCode)

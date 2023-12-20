@@ -74,13 +74,12 @@ func (r *app) AppInfo(ctx context.Context) (*dto.AppInfo, error) {
 	}
 
 	res := &dto.AppInfo{
-		HarbourCode:     setting.HarbourCode,
-		HarbourName:     setting.HarbourName,
-		Mode:            setting.Mode.String(),
-		Interval:        setting.Interval,
-		Range:           setting.Range,
-		ApkDownloadLink: setting.ApkDownloadLink,
-		Geofence:        geofences,
+		HarbourCode: setting.HarbourCode,
+		HarbourName: setting.HarbourName,
+		Mode:        setting.Mode.String(),
+		Interval:    setting.Interval,
+		Range:       setting.Range,
+		Geofence:    geofences,
 	}
 
 	if r.CacheEnabled {

@@ -28,11 +28,27 @@ func NewHandler(f *factory.Factory) *handler {
 	}
 }
 
-func (h *handler) shipMonitorWebsocket(c *gin.Context) {
+func (h *handler) LastestDockedShip(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	limitParam := c.DefaultQuery("limit", "25")
+	limit, _ := strconv.Atoi(limitParam)
+
+	data, err := h.service.LastestDockedShip(ctx, limit)
+	if err != nil {
+		response := util.APIResponse(err.Error(), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Success retrive data lastest ship", http.StatusOK, "success", data)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *handler) ShipMonitorWebsocket(c *gin.Context) {
 	ctx := c.Request.Context()
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade connection to WebSocket"})
 		return
 	}
 
@@ -114,7 +130,7 @@ func (h *handler) shipMonitorWebsocket(c *gin.Context) {
 	}
 }
 
-func (h *handler) harbourStatistic(c *gin.Context) {
+func (h *handler) HarbourStatistic(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	data, err := h.service.GetStatistic(ctx)
@@ -128,7 +144,7 @@ func (h *handler) harbourStatistic(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) terrainChart(c *gin.Context) {
+func (h *handler) TerrainChart(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	data, err := h.service.TerrainChart(ctx)
@@ -142,7 +158,7 @@ func (h *handler) terrainChart(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *handler) logsChart(c *gin.Context) {
+func (h *handler) LogsChart(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	dateStart := c.DefaultQuery("start_date", "")

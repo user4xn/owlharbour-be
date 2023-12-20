@@ -93,6 +93,7 @@ type (
 		ShipName        string                  `json:"ship_name"`
 		ResponsibleName string                  `json:"responsible_name"`
 		DeviceID        string                  `json:"device_id"`
+		Phone           string                  `json:"phone"`
 		DetailShip      ShipAddonDetailResponse `json:"detail"`
 		CurrentLong     string                  `json:"current_long"`
 		CurrentLat      string                  `json:"current_lat"`

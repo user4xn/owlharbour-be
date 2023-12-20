@@ -19,6 +19,7 @@ type Service interface {
 	GetStatistic(ctx context.Context) (*dto.DashboardStatisticResponse, error)
 	TerrainChart(ctx context.Context) (*dto.ShipTerrainResponse, error)
 	LogsChart(ctx context.Context, startDate string, endDate string) (*dto.LogsStatisticResponse, error)
+	LastestDockedShip(ctx context.Context, limit int) ([]dto.DashboardLastDockedShipResponse, error)
 }
 
 func NewService(f *factory.Factory) Service {
@@ -27,6 +28,15 @@ func NewService(f *factory.Factory) Service {
 		shipRepository:           f.ShipRepository,
 		pairingRequestRepository: f.PairingRequestRepository,
 	}
+}
+
+func (s *service) LastestDockedShip(ctx context.Context, limit int) ([]dto.DashboardLastDockedShipResponse, error) {
+	res, err := s.shipRepository.LastestDockedShip(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func (s *service) LogsChart(ctx context.Context, startDate string, endDate string) (*dto.LogsStatisticResponse, error) {
@@ -46,11 +56,11 @@ func (s *service) LogsChart(ctx context.Context, startDate string, endDate strin
 	}
 
 	res := dto.LogsStatisticResponse{
-		CheckIN: checkin,
+		CheckIN:  checkin,
 		CheckOUT: checkout,
-		Fraud: fraud,
+		Fraud:    fraud,
 	}
-		
+
 	return &res, nil
 }
 
@@ -67,9 +77,9 @@ func (s *service) TerrainChart(ctx context.Context) (*dto.ShipTerrainResponse, e
 
 	res := dto.ShipTerrainResponse{
 		OnGround: onGorund,
-		OnWater: onWater,
+		OnWater:  onWater,
 	}
-		
+
 	return &res, nil
 }
 

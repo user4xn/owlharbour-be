@@ -21,6 +21,7 @@ type PairingRequest interface {
 	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
 	UpdatedPairingStatus(ctx context.Context, id int, status string) (*dto.PairingRequestResponse, error)
 	PairingDetailByUsername(ctx context.Context, username string) (*dto.DetailPairingResponse, error)
+	PairingRequestCount(ctx context.Context, status string) (int64, error)
 }
 
 type pairingRequest struct {
@@ -35,6 +36,58 @@ func NewPairingRequestRepository(db *gorm.DB, redisClient *redis.Client) Pairing
 		RedisClient:  redisClient,
 		CacheEnabled: true,
 	}
+}
+
+func (r *pairingRequest) PairingRequestCount(ctx context.Context, status string) (int64, error) {
+	paramJSON, err := json.Marshal(status)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return 0, err
+	}
+
+	hash := sha1.Sum(paramJSON)
+	uniqueString := fmt.Sprintf("%x", hash)
+
+	cacheKey := "pairing_pending_count-" + uniqueString
+
+	if r.CacheEnabled {
+		cachedData, err := r.RedisClient.Get(ctx, cacheKey).Result()
+		if err == nil {
+			var cachedInfo int64
+			if err := json.Unmarshal([]byte(cachedData), &cachedInfo); err == nil {
+				return cachedInfo, nil
+			}
+		}
+	}
+
+	tx := r.Db.WithContext(ctx).Begin()
+
+	query := tx.Model(&model.PairingRequest{})
+
+	query = query.Where("status = ?", status)
+
+	var res int64
+
+	if err := query.Count(&res).Error; err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	if r.CacheEnabled {
+		jsonData, err := json.Marshal(res)
+		if err == nil {
+			r.RedisClient.Set(ctx, cacheKey, jsonData, time.Hour)
+		} else {
+			fmt.Println("Error marshalling data for cache:", err)
+		}
+	}
+
+	return res, nil
 }
 
 func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.PairingRequest) error {

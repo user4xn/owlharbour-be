@@ -20,6 +20,7 @@ func (h *handler) Router(g *gin.RouterGroup) {
 	g.GET("/mobile/location-log/:device_id", h.ShipLocationLogByDevice)
 	g.POST("/record-log", rateLimiter.Limit(), h.RecordLog)
 	g.GET("/pairing-request", h.PairingRequestList)
+	g.GET("/pairing-request/count", h.PairingRequestCount)
 	g.PUT("/pairing/action", h.PairingAction)
 
 	g.GET("/list", h.ShipList)

@@ -26,6 +26,7 @@ type service struct {
 
 type Service interface {
 	PairingShip(ctx context.Context, request dto.PairingRequest) error
+	PairingRequestCount(ctx context.Context) (int64, error)
 	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
 	PairingAction(ctx context.Context, request dto.PairingActionRequest) error
 	PairingDetailByUsername(ctx context.Context, username string) (*dto.DetailPairingResponse, error)
@@ -45,6 +46,15 @@ func NewService(f *factory.Factory) Service {
 		pairingRequestRepository: f.PairingRequestRepository,
 		userRepository:           f.UserRepository,
 	}
+}
+
+func (s *service) PairingRequestCount(ctx context.Context) (int64, error) {
+	countPairing, err := s.pairingRequestRepository.PairingRequestCount(ctx, "pending")
+	if err != nil {
+		return 0, err
+	}
+
+	return countPairing, nil
 }
 
 func (s *service) PairingShip(ctx context.Context, request dto.PairingRequest) error {
@@ -429,6 +439,7 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 		ShipName:        ship.Name,
 		ResponsibleName: ship.ResponsibleName,
 		DeviceID:        ship.DeviceID,
+		Phone:           ship.Phone,
 		DetailShip:      addonDetail,
 		CurrentLong:     ship.CurrentLong,
 		CurrentLat:      ship.CurrentLat,

@@ -445,3 +445,17 @@ func (h *handler) ShipLocationLogByDevice(c *gin.Context) {
 	response := util.APIResponse("Successfully retrieved ship list", http.StatusOK, "success", res)
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *handler) PairingRequestCount(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	res, err := h.service.PairingRequestCount(ctx)
+	if err != nil {
+		response := util.APIResponse("Failed to retrieve pairing ship count: "+err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := util.APIResponse("Successfully retrieved pairing ship count", http.StatusOK, "success", res)
+	c.JSON(http.StatusOK, response)
+}

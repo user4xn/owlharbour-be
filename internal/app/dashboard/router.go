@@ -22,13 +22,14 @@ func (h *handler) Router(g *gin.RouterGroup) {
 		}
 
 		// Upgrade to WebSocket connection and handle it in your handler function
-		h.shipMonitorWebsocket(c)
+		h.ShipMonitorWebsocket(c)
 	})
 
-	g.GET("/ship-monitor/open-websocket", h.shipMonitorWebsocket)
+	g.GET("/ship-monitor/open-websocket", h.ShipMonitorWebsocket)
 
 	g.Use(middleware.Authenticate())
-	g.GET("/statistic", h.harbourStatistic)
-	g.GET("/terrain-chart", h.terrainChart)
-	g.GET("/logs-chart", h.logsChart)
+	g.GET("/statistic", h.HarbourStatistic)
+	g.GET("/terrain-chart", h.TerrainChart)
+	g.GET("/logs-chart", h.LogsChart)
+	g.GET("/lastest-dock-ship", h.LastestDockedShip)
 }

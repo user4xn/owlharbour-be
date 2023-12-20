@@ -14,8 +14,21 @@ type (
 	}
 
 	LogsStatisticResponse struct {
-		CheckIN int64 `json:"checkin"`
+		CheckIN  int64 `json:"checkin"`
 		CheckOUT int64 `json:"checkout"`
-		Fraud int64 `json:"fraud"`
+		Fraud    int64 `json:"fraud"`
+	}
+
+	DashboardLastDockedShipParam struct {
+		Offset int    `json:"offset"`
+		Limit  int    `json:"limit"`
+		Search string `json:"search"`
+	}
+
+	DashboardLastDockedShipResponse struct {
+		ShipName    string `json:"ship_name"`
+		CheckinDate string `json:"checkin_date"`
+		IsInspected int    `json:"is_inspected"`
+		IsReported  int    `json:"is_reported"`
 	}
 )
