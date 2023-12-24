@@ -896,6 +896,14 @@ func (r *ship) ShipInBatch(ctx context.Context, start int, end int) (*[]model.Sh
 		return nil, false, err
 	}
 
+	var result []struct {
+		model.Ship
+		LogLong       string    `json:"log_long"`
+		LogLat        string    `json:"log_lat"`
+		CreatedAtLogs time.Time `json:"log_created" gorm:"column:log_created"`
+		OnGroundLogs  int       `json:"log_onground" gorm:"column:log_onground"`
+	}
+
 	cacheKey := "ship_highest_current_update"
 
 	if r.CacheEnabled {
@@ -908,13 +916,36 @@ func (r *ship) ShipInBatch(ctx context.Context, start int, end int) (*[]model.Sh
 
 					query := tx.Model(&model.Ship{})
 
-					query = query.Where("updated_at BETWEEN ? AND ?", lastUpdate.Add(-10*time.Second), lastUpdate.Add(10*time.Second)).Order("created_at DESC")
+					query = query.Select("ships.*, slr.long as log_long, slr.lat as log_lat, slr.created_at as log_created, slr.on_ground as log_onground")
+					query = query.Joins(`
+						JOIN ship_location_logs AS slr
+						ON slr.ship_id = ships.id
+						AND slr.on_ground = 0
+						AND slr.created_at = (
+							SELECT MAX(created_at)
+							FROM ship_location_logs
+							WHERE ship_id = ships.id AND on_ground = 0
+						)
+					`)
+					query = query.Where("ships.updated_at BETWEEN ? AND ?", lastUpdate.Add(-10*time.Second), lastUpdate.Add(10*time.Second)).Order("ships.created_at DESC")
+
+					if err := query.Find(&result).Error; err != nil {
+						tx.Rollback()
+						return nil, false, err
+					}
 
 					var updatedShips []model.Ship
 
-					if err := query.Find(&updatedShips).Error; err != nil {
-						tx.Rollback()
-						return nil, false, err
+					for _, e := range result {
+						if e.LogLat != "" && e.LogLong != "" && (e.Ship.CurrentLat != e.LogLat || e.Ship.CurrentLong != e.LogLong) && e.Ship.OnGround == 1 {
+							if e.CreatedAtLogs.Before(e.Ship.UpdatedAt) {
+								e.Ship.CurrentLat = e.LogLat
+								e.Ship.CurrentLong = e.LogLong
+								e.Ship.OnGround = e.OnGroundLogs
+							}
+						}
+
+						updatedShips = append(updatedShips, e.Ship)
 					}
 
 					if err := tx.Commit().Error; err != nil {
@@ -944,13 +975,38 @@ func (r *ship) ShipInBatch(ctx context.Context, start int, end int) (*[]model.Sh
 
 	tx := r.Db.WithContext(ctx).Begin()
 
-	query := tx.Model(&model.Ship{}).Offset(start).Limit(end - start).Order("created_at ASC")
+	query := tx.Model(&model.Ship{})
+	query = query.Select("ships.*, slr.long as log_long, slr.lat as log_lat, slr.created_at as log_created, slr.on_ground as log_onground")
+	query = query.Joins(`
+		JOIN ship_location_logs AS slr
+		ON slr.ship_id = ships.id
+		AND slr.on_ground = 0
+		AND slr.created_at = (
+			SELECT MAX(created_at)
+			FROM ship_location_logs
+			WHERE ship_id = ships.id AND on_ground = 0
+		)
+	`)
+
+	query = query.Offset(start).Limit(end - start).Order("ships.created_at ASC")
+
+	if err := query.Find(&result).Error; err != nil {
+		tx.Rollback()
+		return nil, false, err
+	}
 
 	var ships []model.Ship
 
-	if err := query.Find(&ships).Error; err != nil {
-		tx.Rollback()
-		return nil, false, err
+	for _, e := range result {
+		if e.LogLat != "" && e.LogLong != "" && (e.Ship.CurrentLat != e.LogLat || e.Ship.CurrentLong != e.LogLong) && e.Ship.OnGround == 1 {
+			if e.CreatedAtLogs.Before(e.Ship.UpdatedAt) {
+				e.Ship.CurrentLat = e.LogLat
+				e.Ship.CurrentLong = e.LogLong
+				e.Ship.OnGround = e.OnGroundLogs
+			}
+		}
+
+		ships = append(ships, e.Ship)
 	}
 
 	if err := tx.Commit().Error; err != nil {

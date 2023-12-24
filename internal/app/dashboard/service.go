@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"fmt"
 	"simpel-api/internal/dto"
 	"simpel-api/internal/factory"
 	"simpel-api/internal/repository"
@@ -100,6 +101,7 @@ func (s *service) GetShipsInBatch(ctx context.Context, start int, end int) ([]dt
 
 	var data []dto.ShipWebsocketResponse
 	for _, e := range *res {
+		fmt.Println("Res was ? and ?", e.CurrentLat, e.CurrentLong)
 		data = append(data, dto.ShipWebsocketResponse{
 			IsUpdate: is_update,
 			ShipID:   e.ID,
