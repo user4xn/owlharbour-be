@@ -148,6 +148,7 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 					DeviceID:        res.DeviceID,
 					FirebaseToken:   res.FirebaseToken,
 					UserID:          user.ID,
+					Phone:           res.Phone,
 				}
 
 				err = s.shipRepository.StoreNewShip(ctx, pairingToShip)
@@ -317,14 +318,14 @@ func (s *service) RecordLocationShip(ctx context.Context, request dto.ShipRecord
 		}
 	} else {
 		lastLogs, _ := s.shipRepository.GetLastDockedLog(ctx, ship.ID)
-		
-		if lastLogs != nil && lastLogs.Status == "checkin" {	
+
+		if lastLogs != nil && lastLogs.Status == "checkin" {
 			if ship.OnGround != 1 {
 				isWater, err = helper.IsWater(lat, long)
 				if err != nil {
 					return err
 				}
-				
+
 				if isWater {
 					dockedLog := dto.ShipDockedLogStore{
 						ShipID: ship.ID,
@@ -364,7 +365,7 @@ func (s *service) RecordLocationShip(ctx context.Context, request dto.ShipRecord
 			status = "out of scope"
 		}
 	}
-	
+
 	sll := dto.ShipLocationLogStore{
 		ShipID:   ship.ID,
 		Lat:      request.Lat,
