@@ -26,9 +26,11 @@ type (
 	}
 
 	DashboardLastDockedShipResponse struct {
-		ShipName    string `json:"ship_name"`
-		CheckinDate string `json:"checkin_date"`
-		IsInspected int    `json:"is_inspected"`
-		IsReported  int    `json:"is_reported"`
+		ShipName        string `json:"ship_name"`
+		Phone           string `json:"phone"`
+		ResponsibleName string `json:"responsible_name"`
+		CheckinDate     string `json:"checkin_date"`
+		IsInspected     int    `json:"is_inspected"`
+		IsReported      int    `json:"is_reported"`
 	}
 )

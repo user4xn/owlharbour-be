@@ -66,7 +66,7 @@ func (r *ship) LastestDockedShip(ctx context.Context, limit int) ([]dto.Dashboar
 	tx := r.Db.WithContext(ctx).Begin()
 
 	query := tx.Model(&model.ShipDockedLog{}).
-		Select("ship_docked_logs.*, ships.name as ship_name, ships.id as ship_id").
+		Select("ship_docked_logs.*, ships.name as ship_name, ships.id as ship_id, ships.responsible_name as responsible_name, ships.phone as phone").
 		Joins("JOIN ships ON ship_docked_logs.ship_id = ships.id")
 
 	limitParam := 10
@@ -80,7 +80,9 @@ func (r *ship) LastestDockedShip(ctx context.Context, limit int) ([]dto.Dashboar
 
 	var result []struct {
 		model.ShipDockedLog
-		ShipName string `json:"ship_name"`
+		ShipName        string `json:"ship_name"`
+		ResponsibleName string `json:"resposible_name"`
+		Phone           string `json:"phone"`
 	}
 
 	if err := query.Find(&result).Error; err != nil {
@@ -91,10 +93,12 @@ func (r *ship) LastestDockedShip(ctx context.Context, limit int) ([]dto.Dashboar
 	var shipDock []dto.DashboardLastDockedShipResponse
 	for _, e := range result {
 		shipDock = append(shipDock, dto.DashboardLastDockedShipResponse{
-			ShipName:    e.ShipName,
-			CheckinDate: e.CreatedAt.Format("2006-01-02 15:04:05"),
-			IsInspected: e.IsInspected,
-			IsReported:  e.IsReported,
+			ShipName:        e.ShipName,
+			Phone:           e.Phone,
+			ResponsibleName: e.ResponsibleName,
+			CheckinDate:     e.CreatedAt.Format("2006-01-02 15:04:05"),
+			IsInspected:     e.IsInspected,
+			IsReported:      e.IsReported,
 		})
 	}
 
