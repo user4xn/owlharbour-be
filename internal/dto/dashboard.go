@@ -14,9 +14,10 @@ type (
 	}
 
 	LogsStatisticResponse struct {
-		CheckIN  int64 `json:"checkin"`
-		CheckOUT int64 `json:"checkout"`
-		Fraud    int64 `json:"fraud"`
+		OutOfScope int64 `json:"out_of_scope"`
+		CheckIN    int64 `json:"checkin"`
+		CheckOUT   int64 `json:"checkout"`
+		Fraud      int64 `json:"fraud"`
 	}
 
 	DashboardLastDockedShipParam struct {
