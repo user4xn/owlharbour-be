@@ -51,15 +51,21 @@ func (s *service) LogsChart(ctx context.Context, startDate string, endDate strin
 		return nil, err
 	}
 
+	outOfScope, err := s.shipRepository.CountShipByStatus(ctx, startDate, endDate, "out of scope")
+	if err != nil {
+		return nil, err
+	}
+
 	fraud, err := s.shipRepository.CountShipFraud(ctx, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
 
 	res := dto.LogsStatisticResponse{
-		CheckIN:  checkin,
-		CheckOUT: checkout,
-		Fraud:    fraud,
+		OutOfScope: outOfScope,
+		CheckIN:    checkin,
+		CheckOUT:   checkout,
+		Fraud:      fraud,
 	}
 
 	return &res, nil
