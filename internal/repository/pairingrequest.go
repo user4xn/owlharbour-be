@@ -94,16 +94,20 @@ func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.P
 	tx := r.Db.WithContext(ctx).Begin()
 
 	existingDevice := model.PairingRequest{}
-	existingDeviceShip := model.Ship{}
 	if err := tx.Where("device_id = ?", request.DeviceID).Order("created_at DESC").First(&existingDevice).Error; err == nil {
 		if existingDevice.Status == "pending" {
 			tx.Rollback()
 			return fmt.Errorf("a pending pairing request with the same DeviceID already exists")
 		}
 	}
-	if err := tx.Where("device_id = ? AND status = ?", request.DeviceID, "pending").Order("created_at DESC").First(&existingDeviceShip).Error; err == nil {
+
+	existingDeviceShip := model.Ship{}
+	if err := tx.Where("device_id = ?", request.DeviceID).Order("created_at DESC").First(&existingDeviceShip).Error; err == nil {
+		return err
+	}
+	if existingDevice.ID != 0 {
 		tx.Rollback()
-		return fmt.Errorf("a pending pairing request with the same DeviceID already exists")
+		return fmt.Errorf("a ship with the same DeviceID already exists")
 	}
 
 	password := []byte(request.Password)
