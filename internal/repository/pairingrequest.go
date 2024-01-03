@@ -103,11 +103,10 @@ func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.P
 
 	existingDeviceShip := model.Ship{}
 	if err := tx.Where("device_id = ?", request.DeviceID).Order("created_at DESC").First(&existingDeviceShip).Error; err == nil {
-		return err
-	}
-	if existingDevice.ID != 0 {
-		tx.Rollback()
-		return fmt.Errorf("a ship with the same DeviceID already exists")
+		if existingDevice.ID != 0 {
+			tx.Rollback()
+			return fmt.Errorf("a ship with the same DeviceID already exists")
+		}
 	}
 
 	password := []byte(request.Password)
