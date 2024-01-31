@@ -110,6 +110,8 @@ type (
 		SIUP      string `json:"siup"`
 		BKP       string `json:"bkp"`
 		SelarMark string `json:"selar_mark"`
+		GT        string `json:"gt"`
+		OwnerName string `json:"owner_name"`
 	}
 
 	DockLogsShip struct {
@@ -137,6 +139,8 @@ type (
 		SIUP      string `json:"siup"`
 		BKP       string `json:"bkp"`
 		SelarMark string `json:"selar_mark"`
+		GT        string `json:"gt"`
+		OwnerName string `json:"owner_name"`
 	}
 
 	ShipRecordRequest struct {

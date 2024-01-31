@@ -8,6 +8,8 @@ type ShipDetail struct {
 	SIUP      string   `gorm:"varchar"`
 	BKP       string   `gorm:"varchar"`
 	SelarMark string   `gorm:"varchar"`
+	GT        string   `gorm:"varchar"`
+	OwnerName string   `gorm:"varchar"`
 }
 
 func (ShipDetail) TableName() string {

@@ -615,11 +615,13 @@ func (r *ship) UpdateShipDetail(ctx context.Context, request dto.ShipAddonDetail
 		SIUP:      request.SIUP,
 		BKP:       request.BKP,
 		SelarMark: request.SelarMark,
+		GT:        request.GT,
+		OwnerName: request.OwnerName,
 	}
 
 	if err := tx.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "ship_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"type", "dimension", "harbour", "siup", "bkp", "selar_mark"}),
+		DoUpdates: clause.AssignmentColumns([]string{"type", "dimension", "harbour", "siup", "bkp", "selar_mark", "gt", "owner_name"}),
 	}).Create(&shipDetailModel).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -752,6 +754,8 @@ func (r *ship) ShipAddonDetail(ctx context.Context, ShipID int) (dto.ShipAddonDe
 		SIUP:      detail.SIUP,
 		BKP:       detail.BKP,
 		SelarMark: detail.SelarMark,
+		GT:        detail.GT,
+		OwnerName: detail.OwnerName,
 	}
 
 	if err := tx.Commit().Error; err != nil {
