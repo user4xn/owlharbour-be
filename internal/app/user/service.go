@@ -89,7 +89,7 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin, is
 			Url  string
 		}{
 			Name: user.Name,
-			Url:  util.GetEnv("APP_URL", "fallback") + ":" + util.GetEnv("APP_PORT", "fallback") + urlVerify + encodedString,
+			Url:  util.GetEnv("URL_EMAIL_VERIF", "fallback") + ":" + util.GetEnv("APP_PORT", "fallback") + urlVerify + encodedString,
 		}
 
 		var tplBuffer = new(bytes.Buffer)
@@ -259,7 +259,7 @@ func (s *service) StoreUser(ctx context.Context, payload dto.PayloadStoreUser) e
 			Url  string
 		}{
 			Name: payload.Name,
-			Url:  util.GetEnv("APP_URL", "fallback") + ":" + util.GetEnv("APP_PORT", "fallback") + urlVerify + encodedString,
+			Url:  util.GetEnv("URL_EMAIL_VERIF", "fallback") + ":" + util.GetEnv("APP_PORT", "fallback") + urlVerify + encodedString,
 		}
 
 		var tplBuffer = new(bytes.Buffer)
