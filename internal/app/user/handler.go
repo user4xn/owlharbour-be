@@ -363,3 +363,53 @@ func (h *handler) ChangePassword(c *gin.Context) {
 	response := util.APIResponse("Success Change Passowrd", http.StatusOK, "success", nil)
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *handler) ChangePasswordUser(c *gin.Context) {
+	userID, _ := strconv.Atoi(c.Param("user_id"))
+	var payload dto.PayloadChangePassword
+	if err := c.ShouldBind(&payload); err != nil {
+		errorMessage := gin.H{"errors": "please fill data"}
+		if err != io.EOF {
+			errors := util.FormatValidationError(err)
+			errorMessage = gin.H{"errors": errors}
+		}
+		response := util.APIResponse("Error Validation", http.StatusUnprocessableEntity, "failed", errorMessage)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	err := h.service.ChangePassword(c, userID, payload)
+
+	if err == constants.NotFoundDataUser {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.NotFoundDataUser), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err == constants.FailedNotSamePassword {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.FailedNotSamePassword), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err == constants.MinimCharacterPassword {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.MinimCharacterPassword), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err == constants.PasswordSameCurrent {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.PasswordSameCurrent), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err == constants.FailedChangePassword {
+		response := util.APIResponse(fmt.Sprintf("%s", constants.FailedChangePassword), http.StatusBadRequest, "failed", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := util.APIResponse("Success Change Passowrd", http.StatusOK, "success", nil)
+	c.JSON(http.StatusOK, response)
+}
