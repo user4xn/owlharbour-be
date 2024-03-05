@@ -98,6 +98,7 @@ func (r *user) GetAll(ctx context.Context, request dto.UserListParam) ([]dto.All
 		userDTO := dto.AllUser{
 			ID:              user.ID,
 			Name:            user.Name,
+			Username:        user.Username,
 			Email:           user.Email,
 			Role:            string(user.Role),
 			EmailVerifiedAt: formatEmailVerifiedAt,

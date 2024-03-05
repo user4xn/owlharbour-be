@@ -84,6 +84,7 @@ type (
 
 	AllUser struct {
 		ID              int    `json:"id"`
+		Username        string `json:"username"`
 		Email           string `json:"email"`
 		Name            string `json:"name"`
 		Role            string `json:"role"`

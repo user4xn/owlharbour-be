@@ -65,7 +65,7 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin, is
 	if err != nil {
 		return dto.ReturnJwt{}, constants.UserNotFound
 	}
-	fmt.Println("sampe compare")
+
 	err = ComparePasswords(user.Password, payload.Password)
 	if err != nil {
 		fmt.Println(err)
@@ -103,7 +103,7 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin, is
 
 		return dto.ReturnJwt{}, constants.UserNotVerifyEmail
 	}
-	
+
 	secretKey := []byte(util.GetEnv("SECRET_KEY", "fallback"))
 
 	jwt, err := GenerateToken(secretKey, strconv.Itoa(user.ID), user.Email)
@@ -132,13 +132,13 @@ func (s *service) LoginService(ctx context.Context, payload dto.PayloadLogin, is
 		log.Println("Error updating jwt token:", err)
 		return dto.ReturnJwt{}, constants.ErrorGenerateJwt
 	}
-	
+
 	if is_mobile {
 		ship, err := s.ShipRepository.FindOne(ctx, "device_id", "user_id = ?", user.ID)
 		if err != nil {
 			return dto.ReturnJwt{}, err
 		}
-	
+
 		if ship.DeviceID != payload.DeviceID {
 			err = s.ShipRepository.UpdateShipDeviceID(ctx, payload.DeviceID, user.ID)
 			if err != nil {
@@ -179,6 +179,7 @@ func (s *service) GetAllUsers(ctx context.Context, request dto.UserListParam) ([
 		user := dto.AllUser{
 			ID:              user.ID,
 			Name:            user.Name,
+			Username:        user.Username,
 			Email:           user.Email,
 			Role:            user.Role,
 			EmailVerifiedAt: user.EmailVerifiedAt,
