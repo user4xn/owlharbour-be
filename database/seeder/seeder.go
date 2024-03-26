@@ -10,13 +10,14 @@ import (
 )
 
 type User struct {
-	ID        uint
-	Name      string
-	Email     string
-	Role      string
-	Password  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID              uint
+	Name            string
+	Email           string
+	Role            string
+	Password        string
+	EmailVerifiedAt time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func Seed() {
@@ -38,20 +39,22 @@ func Seed() {
 
 	seedData := []User{
 		{
-			Name:      "Super Admin",
-			Email:     "superadmin@gmail.com",
-			Role:      "superadmin",
-			Password:  string(hashedPasswordSA),
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Name:            "Super Admin",
+			Email:           "superadmin@gmail.com",
+			Role:            "superadmin",
+			Password:        string(hashedPasswordSA),
+			EmailVerifiedAt: time.Now(),
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
 		},
 		{
-			Name:      "Admin",
-			Email:     "admin@gmail.com",
-			Role:      "admin",
-			Password:  string(hashedPasswordAdmin),
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Name:            "Admin",
+			Email:           "admin@gmail.com",
+			Role:            "admin",
+			Password:        string(hashedPasswordAdmin),
+			EmailVerifiedAt: time.Now(),
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
 		},
 	}
 
