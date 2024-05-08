@@ -2,6 +2,7 @@ package factory
 
 import (
 	"simpel-api/database"
+	"simpel-api/internal/rabbitmq"
 	"simpel-api/internal/repository"
 	"simpel-api/pkg/util"
 
@@ -13,10 +14,12 @@ type Factory struct {
 	ShipRepository           repository.Ship
 	PairingRequestRepository repository.PairingRequest
 	UserRepository           repository.User
+	RabbitMqRepository       repository.RabbitMq
 }
 
 func NewFactory() *Factory {
 	db := database.GetConnection()
+	conn, ch := rabbitmq.CreateConnection()
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     util.GetEnv("REDIS_URL", "localhost") + ":" + util.GetEnv("REDIS_PORT", "6379"),
 		Password: util.GetEnv("REDIS_PASS", ""),
@@ -29,6 +32,7 @@ func NewFactory() *Factory {
 		ShipRepository:           repository.NewShipRepository(db, redisClient),
 		PairingRequestRepository: repository.NewPairingRequestRepository(db, redisClient),
 		UserRepository:           repository.NewUserRepository(db, redisClient),
+		RabbitMqRepository:       repository.NewRabbitMqRepository(conn, ch),
 		// Assign the appropriate implementation of the ReturInsightRepository
 	}
 }

@@ -2,14 +2,13 @@ package ship
 
 import (
 	"simpel-api/internal/middleware"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 func (h *handler) Router(g *gin.RouterGroup) {
 	//100 rps , 1 minute sliding windows
-	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
+	// rateLimiter := middleware.NewRateLimiter(100, time.Minute)
 
 	g.POST("/pairing", h.PairingShip)
 	g.GET("/pairing/detail", h.PairingDetailByUsername)
@@ -18,7 +17,7 @@ func (h *handler) Router(g *gin.RouterGroup) {
 	g.GET("/mobile/profile", h.ShipByAuth)
 	g.GET("/mobile/dock-log/:device_id", h.ShipDockLogByDevice)
 	g.GET("/mobile/location-log/:device_id", h.ShipLocationLogByDevice)
-	g.POST("/record-log", rateLimiter.Limit(), h.RecordLog)
+	g.POST("/record-log", h.RecordRabbitShip)
 	g.GET("/pairing-request", h.PairingRequestList)
 	g.GET("/pairing-request/count", h.PairingRequestCount)
 	g.PUT("/pairing/action", h.PairingAction)

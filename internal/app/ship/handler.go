@@ -6,6 +6,7 @@ import (
 	"simpel-api/internal/dto"
 	"simpel-api/internal/factory"
 	"simpel-api/internal/model"
+	"simpel-api/internal/repository"
 	"simpel-api/pkg/util"
 	"strconv"
 	"strings"
@@ -15,12 +16,14 @@ import (
 )
 
 type handler struct {
-	service Service
+	service            Service
+	rabbitMqRepository repository.RabbitMq
 }
 
 func NewHandler(f *factory.Factory) *handler {
 	return &handler{
-		service: NewService(f),
+		service:            NewService(f),
+		rabbitMqRepository: f.RabbitMqRepository,
 	}
 }
 
@@ -177,6 +180,24 @@ func (h *handler) ShipByAuth(c *gin.Context) {
 	}
 
 	response := util.APIResponse("Successfully retrieved ship data", http.StatusOK, "success", shipDetail)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *handler) RecordRabbitShip(c *gin.Context) {
+	var request dto.ShipRecordRequest
+	err := c.ShouldBindJSON(&request)
+	if err != nil {
+		response := util.APIResponse("insert rabbit ship record failed", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+	err = h.service.RecordShipRabbit(c.Request.Context(), request)
+	if err != nil {
+		response := util.APIResponse("insert rabbit ship record failed", http.StatusInternalServerError, "error", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	response := util.APIResponse("insert rabbit ship record success", http.StatusOK, "success", nil)
 	c.JSON(http.StatusOK, response)
 }
 

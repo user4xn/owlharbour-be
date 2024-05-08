@@ -9,11 +9,13 @@ import (
 	"simpel-api/internal/repository"
 	"simpel-api/pkg/helper"
 	"simpel-api/pkg/log"
+	"simpel-api/pkg/util"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +24,7 @@ type service struct {
 	shipRepository           repository.Ship
 	pairingRequestRepository repository.PairingRequest
 	userRepository           repository.User
+	RabbitMqRepository       repository.RabbitMq
 }
 
 type Service interface {
@@ -37,6 +40,7 @@ type Service interface {
 	ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailResponse, error)
 	ShipDockLog(ctx context.Context, request dto.ShipLogParam, shipOrDeviceID any) (*dto.ShipDockLogResponse, error)
 	ShipLocationLog(ctx context.Context, request dto.ShipLogParam, shipOrDeviceID any) (*dto.ShipLocationLogResponse, error)
+	RecordShipRabbit(ctx context.Context, request dto.ShipRecordRequest) error
 }
 
 func NewService(f *factory.Factory) Service {
@@ -45,7 +49,24 @@ func NewService(f *factory.Factory) Service {
 		shipRepository:           f.ShipRepository,
 		pairingRequestRepository: f.PairingRequestRepository,
 		userRepository:           f.UserRepository,
+		RabbitMqRepository:       f.RabbitMqRepository,
 	}
+}
+
+func (s *service) RecordShipRabbit(ctx context.Context, request dto.ShipRecordRequest) error {
+	publishRequest := dto.RabbitMqPublishRequest{
+		Exchange:  util.GetEnv("RABBITMQ_EXCHANGE_SIMPEL_SHIP", ""),
+		QueueName: "ShipRecordLog",
+		Messages:  request,
+	}
+	go func() {
+		err := s.RabbitMqRepository.Publish(ctx, publishRequest)
+		if err != nil {
+			fmt.Println("Failed to publish a message", zap.String("device id", request.DeviceID), zap.String("error", err.Error()))
+		}
+	}()
+
+	return nil
 }
 
 func (s *service) PairingRequestCount(ctx context.Context) (int64, error) {

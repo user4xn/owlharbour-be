@@ -40,9 +40,12 @@ require (
 	github.com/jackc/pgx/v5 v5.3.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/lib/pq v1.10.9 // indirect
+	github.com/rabbitmq/amqp091-go v1.9.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/ratelimit v0.3.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/arch v0.2.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
