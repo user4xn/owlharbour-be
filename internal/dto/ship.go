@@ -179,5 +179,6 @@ type (
 		DeviceID string   `json:"device_id"`
 		Geo      []string `json:"geo"`
 		OnGround int      `json:"on_ground"`
+		DegNorth float64  `json:"deg_north"`
 	}
 )
