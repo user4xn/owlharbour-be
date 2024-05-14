@@ -3,6 +3,7 @@ package ship
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"simpel-api/internal/dto"
 	"simpel-api/internal/factory"
 	"simpel-api/internal/model"
@@ -456,6 +457,7 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 		log.Logging("Error Fethcing Addon Ship %s", err).Info()
 	}
 
+	randomDeg := -180 + rand.Float64()*(360)
 	res := &dto.ShipDetailResponse{
 		ID:              ship.ID,
 		ShipName:        ship.Name,
@@ -465,6 +467,7 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 		DetailShip:      addonDetail,
 		CurrentLong:     ship.CurrentLong,
 		CurrentLat:      ship.CurrentLat,
+		DegNorth:        randomDeg,
 		FirebaseToken:   ship.FirebaseToken,
 		Status:          string(ship.Status),
 		OnGround:        ship.OnGround,

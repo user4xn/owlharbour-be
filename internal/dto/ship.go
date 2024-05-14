@@ -97,6 +97,7 @@ type (
 		DetailShip      ShipAddonDetailResponse `json:"detail"`
 		CurrentLong     string                  `json:"current_long"`
 		CurrentLat      string                  `json:"current_lat"`
+		DegNorth        float64                 `json:"deg_north"`
 		FirebaseToken   string                  `json:"firebase_token"`
 		Status          string                  `json:"status"`
 		OnGround        int                     `json:"on_ground"`
