@@ -181,8 +181,8 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 				}
 
 				notificationData := map[string]interface{}{
-					"title": "SIMPEL - PAIRING APPROVED",
-					"body":  "Pairing request anda telah disetujui, kini device kapal anda sudah terhubung dengan Pelabuhan " + appInfo.HarbourName,
+					"title": "OWLHARBOUR - PAIRING APPROVED",
+					"body":  "Your ship pairing registration was approved, now your device connected to " + appInfo.HarbourName + " Harbour",
 				}
 				tokens := []string{res.FirebaseToken}
 
@@ -192,8 +192,8 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 				}
 			} else {
 				notificationData := map[string]interface{}{
-					"title": "SIMPEL - PAIRING REJECTED",
-					"body":  "Mohon maaf pairing request device anda dengan Pelabuhan " + appInfo.HarbourName + "ditolak, anda dapat mengajukan kembali di lain waktu",
+					"title": "OWLHARBOUR - PAIRING REJECTED",
+					"body":  "We really sorry, your ship pairing registration was rejected by " + appInfo.HarbourName + " Harbour, please try again later",
 				}
 				tokens := []string{res.FirebaseToken}
 
@@ -318,8 +318,8 @@ func (s *service) RecordLocationShip(ctx context.Context, request dto.ShipRecord
 			}
 
 			notificationData := map[string]interface{}{
-				"title": "SIMPEL - CHECK IN SUCCESS",
-				"body":  "Berhasil CHECK-IN Pelabuhan " + appInfo.HarbourName + " " + formattedTimeNotification,
+				"title": "OWLHARBOUR - CHECK IN SUCCESS",
+				"body":  "Ship was checkin-in into " + appInfo.HarbourName + " Harbour at " + formattedTimeNotification,
 			}
 			tokens := []string{ship.FirebaseToken}
 
@@ -361,8 +361,8 @@ func (s *service) RecordLocationShip(ctx context.Context, request dto.ShipRecord
 					}
 
 					notificationData := map[string]interface{}{
-						"title": "SIMPEL - CHECK OUT SUCCESS",
-						"body":  "Berhasil CHECK-OUT Pelabuhan " + appInfo.HarbourName + " " + formattedTimeNotification,
+						"title": "OWLHARBOUR - CHECK OUT SUCCESS",
+						"body":  "Ship was checkin-out from " + appInfo.HarbourName + " Harbour at " + formattedTimeNotification,
 					}
 					tokens := []string{ship.FirebaseToken}
 

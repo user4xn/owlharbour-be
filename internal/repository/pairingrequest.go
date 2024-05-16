@@ -136,10 +136,12 @@ func (r *pairingRequest) StorePairingRequests(ctx context.Context, request dto.P
 		return err
 	}
 
-	cacheKey := "pairing_list-*"
+	cacheKey := []string{"pairing_list-*", "pairing_pending_count-*"}
 
-	if err := helper.DeleteRedisKeysByPattern(r.RedisClient, cacheKey); err != nil {
-		return err
+	for _, ck := range cacheKey {
+		if err := helper.DeleteRedisKeysByPattern(r.RedisClient, ck); err != nil {
+			return err
+		}
 	}
 
 	return nil

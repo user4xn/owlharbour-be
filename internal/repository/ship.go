@@ -702,7 +702,7 @@ func (r *ship) ShipLocationLogs(ctx context.Context, ShipID int, request *dto.Sh
 	query := tx.Where("ship_id = ?", ShipID).Order("created_at DESC")
 
 	if request.StartDate != "" && request.EndDate != "" {
-		query = query.Where("created_at BETWEEN ? AND ?", request.StartDate, request.EndDate)
+		query = query.Where("created_at BETWEEN ? AND (?::DATE + INTERVAL '1 DAY')", request.StartDate, request.EndDate)
 	}
 
 	limit := 10
