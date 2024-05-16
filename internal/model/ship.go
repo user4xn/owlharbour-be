@@ -10,6 +10,7 @@ type Ship struct {
 	Status          ShipStatus `gorm:"enum:checkin,checkout,out of scope"`
 	CurrentLat      string     `gorm:"varchar"`
 	CurrentLong     string     `gorm:"varchar"`
+	DegNorth        string     `gorm:"varchar"`
 	UserID          int
 	OnGround        int
 }

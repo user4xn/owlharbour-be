@@ -97,7 +97,7 @@ type (
 		DetailShip      ShipAddonDetailResponse `json:"detail"`
 		CurrentLong     string                  `json:"current_long"`
 		CurrentLat      string                  `json:"current_lat"`
-		DegNorth        float64                 `json:"deg_north"`
+		DegNorth        string                  `json:"deg_north"`
 		FirebaseToken   string                  `json:"firebase_token"`
 		Status          string                  `json:"status"`
 		OnGround        int                     `json:"on_ground"`
@@ -148,6 +148,7 @@ type (
 		DeviceID string `json:"device_id" binding:"required"`
 		Long     string `json:"long" binding:"required"`
 		Lat      string `json:"lat" binding:"required"`
+		DegNorth string `json:"deg_north" binding:"required"`
 		IsMocked int    `json:"is_mocked"`
 	}
 
@@ -180,6 +181,6 @@ type (
 		DeviceID string   `json:"device_id"`
 		Geo      []string `json:"geo"`
 		OnGround int      `json:"on_ground"`
-		DegNorth float64  `json:"deg_north"`
+		DegNorth string   `json:"deg_north"`
 	}
 )

@@ -113,7 +113,6 @@ func (s *service) GetShipsInBatch(ctx context.Context, start int, end int) ([]dt
 		rand.Seed(time.Now().UnixNano())
 
 		// Generate a random number between -180 and 180
-		randomDeg := -180 + rand.Float64()*(360)
 		data = append(data, dto.ShipWebsocketResponse{
 			IsUpdate: is_update,
 			ShipID:   e.ID,
@@ -121,7 +120,7 @@ func (s *service) GetShipsInBatch(ctx context.Context, start int, end int) ([]dt
 			DeviceID: e.DeviceID,
 			OnGround: e.OnGround,
 			Geo:      []string{e.CurrentLong, e.CurrentLat},
-			DegNorth: randomDeg,
+			DegNorth: e.DegNorth,
 		})
 	}
 

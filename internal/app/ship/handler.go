@@ -185,13 +185,19 @@ func (h *handler) ShipByAuth(c *gin.Context) {
 
 func (h *handler) RecordRabbitShip(c *gin.Context) {
 	var request dto.ShipRecordRequest
-	err := c.ShouldBindJSON(&request)
-	if err != nil {
-		response := util.APIResponse("insert rabbit ship record failed", http.StatusBadRequest, "error", nil)
+	if err := c.ShouldBindJSON(&request); err != nil {
+		errorMessage := gin.H{"errors": "please fill data"}
+		if err != io.EOF {
+			errors := util.FormatValidationError(err)
+			errorMessage = gin.H{"errors": errors}
+		}
+
+		response := util.APIResponse("Invalid request payload", http.StatusBadRequest, "failed", errorMessage)
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
-	err = h.service.RecordShipRabbit(c.Request.Context(), request)
+
+	err := h.service.RecordShipRabbit(c.Request.Context(), request)
 	if err != nil {
 		response := util.APIResponse("insert rabbit ship record failed", http.StatusInternalServerError, "error", nil)
 		c.JSON(http.StatusInternalServerError, response)

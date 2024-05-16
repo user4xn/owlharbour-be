@@ -3,7 +3,6 @@ package ship
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"owlharbour-api/internal/dto"
 	"owlharbour-api/internal/factory"
 	"owlharbour-api/internal/model"
@@ -457,7 +456,6 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 		log.Logging("Error Fethcing Addon Ship %s", err).Info()
 	}
 
-	randomDeg := -180 + rand.Float64()*(360)
 	res := &dto.ShipDetailResponse{
 		ID:              ship.ID,
 		ShipName:        ship.Name,
@@ -467,7 +465,7 @@ func (s *service) ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailRe
 		DetailShip:      addonDetail,
 		CurrentLong:     ship.CurrentLong,
 		CurrentLat:      ship.CurrentLat,
-		DegNorth:        randomDeg,
+		DegNorth:        ship.DegNorth,
 		FirebaseToken:   ship.FirebaseToken,
 		Status:          string(ship.Status),
 		OnGround:        ship.OnGround,
