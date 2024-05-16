@@ -2,7 +2,7 @@ package seeder
 
 import (
 	"fmt"
-	"simpel-api/database"
+	"owlharbour-api/database"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"

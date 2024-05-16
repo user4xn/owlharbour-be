@@ -1,14 +1,14 @@
 package http
 
 import (
-	Dashboard "simpel-api/internal/app/dashboard"
-	Inspection "simpel-api/internal/app/inspection"
-	Report "simpel-api/internal/app/report"
-	Setting "simpel-api/internal/app/setting"
-	Ship "simpel-api/internal/app/ship"
-	User "simpel-api/internal/app/user"
-	"simpel-api/internal/factory"
-	"simpel-api/internal/middleware"
+	Dashboard "owlharbour-api/internal/app/dashboard"
+	Inspection "owlharbour-api/internal/app/inspection"
+	Report "owlharbour-api/internal/app/report"
+	Setting "owlharbour-api/internal/app/setting"
+	Ship "owlharbour-api/internal/app/ship"
+	User "owlharbour-api/internal/app/user"
+	"owlharbour-api/internal/factory"
+	"owlharbour-api/internal/middleware"
 	"time"
 
 	ratelimit "github.com/JGLTechnologies/gin-rate-limit"

@@ -2,7 +2,7 @@ package rabbitmq
 
 import (
 	"fmt"
-	"simpel-api/pkg/util"
+	"owlharbour-api/pkg/util"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )

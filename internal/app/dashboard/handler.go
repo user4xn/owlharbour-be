@@ -2,9 +2,9 @@ package dashboard
 
 import (
 	"net/http"
-	"simpel-api/internal/factory"
-	"simpel-api/pkg/log"
-	"simpel-api/pkg/util"
+	"owlharbour-api/internal/factory"
+	"owlharbour-api/pkg/log"
+	"owlharbour-api/pkg/util"
 	"strconv"
 	"time"
 

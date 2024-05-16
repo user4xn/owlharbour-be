@@ -3,9 +3,9 @@ package inspection
 import (
 	"context"
 	"fmt"
-	"simpel-api/internal/dto"
-	"simpel-api/internal/factory"
-	"simpel-api/internal/repository"
+	"owlharbour-api/internal/dto"
+	"owlharbour-api/internal/factory"
+	"owlharbour-api/internal/repository"
 )
 
 type service struct {

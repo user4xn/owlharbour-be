@@ -1,14 +1,14 @@
 version: "1.0"
 
 services:
-  simpel:
+  owlharbour:
     build:
       dockerfile: ./Dockerfile
     ports:
       - "8080:8081"
     networks:
-      - simpel-network
+      - owlharbour-network
 
 networks:
-  simpel-network:
+  owlharbour-network:
     driver: bridge

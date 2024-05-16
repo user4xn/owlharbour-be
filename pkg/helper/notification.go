@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"simpel-api/pkg/util"
+	"owlharbour-api/pkg/util"
 )
 
 var apiKey string

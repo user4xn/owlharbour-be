@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"simpel-api/pkg/util"
+	"owlharbour-api/pkg/util"
 
 	"gopkg.in/gomail.v2"
 )

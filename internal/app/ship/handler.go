@@ -3,11 +3,11 @@ package ship
 import (
 	"io"
 	"net/http"
-	"simpel-api/internal/dto"
-	"simpel-api/internal/factory"
-	"simpel-api/internal/model"
-	"simpel-api/internal/repository"
-	"simpel-api/pkg/util"
+	"owlharbour-api/internal/dto"
+	"owlharbour-api/internal/factory"
+	"owlharbour-api/internal/model"
+	"owlharbour-api/internal/repository"
+	"owlharbour-api/pkg/util"
 	"strconv"
 	"strings"
 

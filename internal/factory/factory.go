@@ -1,10 +1,10 @@
 package factory
 
 import (
-	"simpel-api/database"
-	"simpel-api/internal/rabbitmq"
-	"simpel-api/internal/repository"
-	"simpel-api/pkg/util"
+	"owlharbour-api/database"
+	"owlharbour-api/internal/rabbitmq"
+	"owlharbour-api/internal/repository"
+	"owlharbour-api/pkg/util"
 
 	"github.com/redis/go-redis/v9"
 )

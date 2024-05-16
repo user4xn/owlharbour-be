@@ -2,9 +2,9 @@ package report
 
 import (
 	"net/http"
-	"simpel-api/internal/dto"
-	"simpel-api/internal/factory"
-	"simpel-api/pkg/util"
+	"owlharbour-api/internal/dto"
+	"owlharbour-api/internal/factory"
+	"owlharbour-api/pkg/util"
 	"strconv"
 	"strings"
 

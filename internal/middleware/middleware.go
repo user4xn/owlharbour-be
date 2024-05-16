@@ -3,9 +3,9 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"owlharbour-api/internal/factory"
+	"owlharbour-api/pkg/util"
 	"regexp"
-	"simpel-api/internal/factory"
-	"simpel-api/pkg/util"
 	"strconv"
 
 	"github.com/dgrijalva/jwt-go"

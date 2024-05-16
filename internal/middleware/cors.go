@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"net/http"
-	"simpel-api/pkg/util"
+	"owlharbour-api/pkg/util"
 
 	"github.com/gin-gonic/gin"
 )

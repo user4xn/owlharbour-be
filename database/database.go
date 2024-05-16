@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
-	"simpel-api/pkg/util"
+	"owlharbour-api/pkg/util"
 	"sync"
 
 	"gorm.io/driver/postgres"

@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"simpel-api/internal/dto"
-	"simpel-api/pkg/util"
+	"owlharbour-api/internal/dto"
+	"owlharbour-api/pkg/util"
 
 	"go.uber.org/zap"
 )

@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"simpel-api/internal/model"
-	"simpel-api/pkg/util"
+	"owlharbour-api/internal/model"
+	"owlharbour-api/pkg/util"
 
 	"gorm.io/gorm"
 )

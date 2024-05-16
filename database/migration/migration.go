@@ -1,8 +1,8 @@
 package migration
 
 import (
-	"simpel-api/database"
-	"simpel-api/internal/model"
+	"owlharbour-api/database"
+	"owlharbour-api/internal/model"
 )
 
 var tables = []interface{}{

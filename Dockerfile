@@ -6,4 +6,4 @@ WORKDIR /app/
 
 RUN go build -v .
 
-CMD ["./simpel-api"]
+CMD ["./owlharbour-api"]

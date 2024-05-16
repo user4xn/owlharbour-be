@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"simpel-api/pkg/util"
+	"owlharbour-api/pkg/util"
 	"strings"
 )
 

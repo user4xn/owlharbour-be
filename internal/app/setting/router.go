@@ -1,7 +1,7 @@
 package setting
 
 import (
-	"simpel-api/internal/middleware"
+	"owlharbour-api/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )

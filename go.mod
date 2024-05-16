@@ -1,4 +1,4 @@
-module simpel-api
+module owlharbour-api
 
 go 1.18
 
