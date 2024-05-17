@@ -30,11 +30,11 @@ type service struct {
 type Service interface {
 	PairingShip(ctx context.Context, request dto.PairingRequest) error
 	PairingRequestCount(ctx context.Context) (int64, error)
-	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
+	PairingRequestList(ctx context.Context, request dto.PairingListParam) (*dto.PairingRequestResponseList, error)
 	PairingAction(ctx context.Context, request dto.PairingActionRequest) error
 	PairingDetailByUsername(ctx context.Context, username string) (*dto.DetailPairingResponse, error)
 	ShipByAuth(ctx context.Context, authUser model.User) (*dto.ShipMobileDetailResponse, error)
-	ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error)
+	ShipList(ctx context.Context, request dto.ShipListParam) (*dto.ShipResponseList, error)
 	RecordLocationShip(ctx context.Context, request dto.ShipRecordRequest) error
 	UpdateShipDetail(ctx context.Context, request dto.ShipAddonDetailRequest) error
 	ShipDetail(ctx context.Context, ShipID int) (*dto.ShipDetailResponse, error)
@@ -70,7 +70,7 @@ func (s *service) RecordShipRabbit(ctx context.Context, request dto.ShipRecordRe
 }
 
 func (s *service) PairingRequestCount(ctx context.Context) (int64, error) {
-	countPairing, err := s.pairingRequestRepository.PairingRequestCount(ctx, "pending")
+	countPairing, err := s.pairingRequestRepository.PairingRequestCount(ctx, []string{"pending"})
 	if err != nil {
 		return 0, err
 	}
@@ -96,13 +96,27 @@ func (s *service) PairingShip(ctx context.Context, request dto.PairingRequest) e
 	return nil
 }
 
-func (s *service) PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error) {
-	res, err := s.pairingRequestRepository.PairingRequestList(ctx, request)
+func (s *service) PairingRequestList(ctx context.Context, request dto.PairingListParam) (*dto.PairingRequestResponseList, error) {
+	var (
+		res dto.PairingRequestResponseList
+	)
+
+	totalPairing, err := s.pairingRequestRepository.PairingRequestCount(ctx, request.Status)
 	if err != nil {
 		return nil, err
 	}
 
-	return res, nil
+	fetch, err := s.pairingRequestRepository.PairingRequestList(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	res = dto.PairingRequestResponseList{
+		Total: int(totalPairing),
+		Data:  fetch,
+	}
+
+	return &res, nil
 }
 
 func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRequest) error {
@@ -212,13 +226,24 @@ func (s *service) PairingAction(ctx context.Context, request dto.PairingActionRe
 	return nil
 }
 
-func (s *service) ShipList(ctx context.Context, request dto.ShipListParam) ([]dto.ShipResponse, error) {
-	res, err := s.shipRepository.ShipList(ctx, request)
+func (s *service) ShipList(ctx context.Context, request dto.ShipListParam) (*dto.ShipResponseList, error) {
+	var (
+		res dto.ShipResponseList
+	)
+
+	totalShip, err := s.shipRepository.CountShip(ctx)
+
+	fetch, err := s.shipRepository.ShipList(ctx, request)
 	if err != nil {
 		return nil, err
 	}
 
-	return res, nil
+	res = dto.ShipResponseList{
+		Total: int(totalShip),
+		Data:  fetch,
+	}
+
+	return &res, nil
 }
 
 func (s *service) ShipByAuth(ctx context.Context, authUser model.User) (*dto.ShipMobileDetailResponse, error) {
@@ -392,6 +417,7 @@ func (s *service) RecordLocationShip(ctx context.Context, request dto.ShipRecord
 		Lat:      request.Lat,
 		Long:     request.Long,
 		IsMocked: request.IsMocked,
+		DegNorth: request.DegNorth,
 		OnGround: func() int {
 			if isWater {
 				return 0
@@ -413,6 +439,7 @@ func (s *service) RecordLocationShip(ctx context.Context, request dto.ShipRecord
 		Status:      model.ShipStatus(status),
 		CurrentLat:  request.Lat,
 		CurrentLong: request.Long,
+		DegNorth:    request.DegNorth,
 		OnGround: func() int {
 			if isWater {
 				return 0

@@ -21,7 +21,7 @@ type PairingRequest interface {
 	PairingRequestList(ctx context.Context, request dto.PairingListParam) ([]dto.PairingRequestResponse, error)
 	UpdatedPairingStatus(ctx context.Context, id int, status string) (*dto.PairingRequestResponse, error)
 	PairingDetailByUsername(ctx context.Context, username string) (*dto.DetailPairingResponse, error)
-	PairingRequestCount(ctx context.Context, status string) (int64, error)
+	PairingRequestCount(ctx context.Context, status []string) (int64, error)
 }
 
 type pairingRequest struct {
@@ -38,7 +38,7 @@ func NewPairingRequestRepository(db *gorm.DB, redisClient *redis.Client) Pairing
 	}
 }
 
-func (r *pairingRequest) PairingRequestCount(ctx context.Context, status string) (int64, error) {
+func (r *pairingRequest) PairingRequestCount(ctx context.Context, status []string) (int64, error) {
 	paramJSON, err := json.Marshal(status)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -64,7 +64,7 @@ func (r *pairingRequest) PairingRequestCount(ctx context.Context, status string)
 
 	query := tx.Model(&model.PairingRequest{})
 
-	query = query.Where("status = ?", status)
+	query = query.Where("status in (?)", status)
 
 	var res int64
 

@@ -62,6 +62,11 @@ type (
 		OnGround int    `json:"on_ground"`
 	}
 
+	ShipResponseList struct {
+		Total int            `json:"total"`
+		Data  []ShipResponse `json:"data"`
+	}
+
 	ShipResponse struct {
 		ID              int    `json:"id"`
 		ShipName        string `json:"ship_name"`
@@ -129,6 +134,7 @@ type (
 		Lat       string `json:"lat"`
 		IsMocked  int    `json:"is_mocked"`
 		OnGround  int    `json:"on_ground"`
+		DegNorth  string `json:"deg_north"`
 		CreatedAt string `json:"created_at"`
 	}
 
@@ -170,6 +176,7 @@ type (
 		ShipID   int    `json:"ship_id"`
 		Long     string `json:"long"`
 		Lat      string `json:"lat"`
+		DegNorth string `json:"deg_north"`
 		IsMocked int    `json:"is_mocked"`
 		OnGround int    `json:"on_ground"`
 	}

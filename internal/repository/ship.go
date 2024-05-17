@@ -545,6 +545,7 @@ func (r *ship) StoreLocationLog(ctx context.Context, request dto.ShipLocationLog
 		ShipID:   request.ShipID,
 		Long:     request.Long,
 		Lat:      request.Lat,
+		DegNorth: request.DegNorth,
 		OnGround: request.OnGround,
 		IsMocked: request.IsMocked,
 	}
@@ -569,6 +570,7 @@ func (r *ship) UpdateShip(ctx context.Context, request model.Ship) error {
 		"status":       model.ShipStatus(request.Status),
 		"current_lat":  request.CurrentLat,
 		"current_long": request.CurrentLong,
+		"deg_north":    request.DegNorth,
 		"on_ground": func() int {
 			if request.OnGround == 1 {
 				return 1
@@ -577,7 +579,7 @@ func (r *ship) UpdateShip(ctx context.Context, request model.Ship) error {
 		}(),
 	}
 
-	if err := tx.Model(&model.Ship{}).Where("id = ?", request.ID).Updates(updateFields).Error; err != nil {
+	if err := tx.Model(&model.Ship{}).Where("id = ?", request.ID).Updates(updateFields).Debug().Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -731,6 +733,7 @@ func (r *ship) ShipLocationLogs(ctx context.Context, ShipID int, request *dto.Sh
 			Lat:       log.Lat,
 			IsMocked:  log.IsMocked,
 			OnGround:  log.OnGround,
+			DegNorth:  log.DegNorth,
 			CreatedAt: log.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}

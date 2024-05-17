@@ -17,6 +17,11 @@ type (
 		Status    string `json:"status" binding:"required"`
 	}
 
+	PairingRequestResponseList struct {
+		Total int                      `json:"total"`
+		Data  []PairingRequestResponse `json:"data"`
+	}
+
 	PairingRequestResponse struct {
 		ID              int    `json:"id"`
 		ShipName        string `json:"ship_name"`
