@@ -49,8 +49,7 @@ func (h *handler) ShipMonitorWebsocket(c *gin.Context) {
 	ctx := c.Request.Context()
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		response := util.APIResponse("failed to upgrade websocket: "+err.Error(), http.StatusInternalServerError, "failed", nil)
-		c.JSON(http.StatusInternalServerError, response)
+		log.Logging("Failed on ws handshake: %s", err.Error()).Error()
 		return
 	}
 
@@ -96,10 +95,10 @@ func (h *handler) ShipMonitorWebsocket(c *gin.Context) {
 			if end > int(totalShips) {
 				end = int(totalShips)
 			}
-			log.Logging("Fetching ships | %s | %s |", start, end).Info()
+			log.Logging("Fetching ships | %d | %d |", start, end).Info()
 			ships, err := h.service.GetShipsInBatch(ctx, start, end)
 			if err != nil {
-				log.Logging("Error fetching ships %s - %s, Err: %s", start, end, err.Error()).Error()
+				log.Logging("Error fetching ships %d - %d, Err: %s", start, end, err.Error()).Error()
 
 				conn.Close()
 				conn, err = upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -111,7 +110,7 @@ func (h *handler) ShipMonitorWebsocket(c *gin.Context) {
 			}
 
 			if err := conn.WriteJSON(ships); err != nil {
-				log.Logging("Error sending ships %s - %s, Err: %s", start, end, err.Error()).Error()
+				log.Logging("Error sending ships %d - %d, Err: %s", start, end, err.Error()).Error()
 
 				conn.Close()
 				conn, err = upgrader.Upgrade(c.Writer, c.Request, nil)
