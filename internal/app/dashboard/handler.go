@@ -49,6 +49,8 @@ func (h *handler) ShipMonitorWebsocket(c *gin.Context) {
 	ctx := c.Request.Context()
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
+		response := util.APIResponse("failed to upgrade websocket: "+err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
