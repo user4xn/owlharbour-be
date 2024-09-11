@@ -3,11 +3,9 @@ package dashboard
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"owlharbour-api/internal/dto"
 	"owlharbour-api/internal/factory"
 	"owlharbour-api/internal/repository"
-	"time"
 )
 
 type service struct {
@@ -110,7 +108,6 @@ func (s *service) GetShipsInBatch(ctx context.Context, start int, end int) ([]dt
 	var data []dto.ShipWebsocketResponse
 	for _, e := range *res {
 		fmt.Println("Res was ? and ?", e.CurrentLat, e.CurrentLong)
-		rand.Seed(time.Now().UnixNano())
 
 		// Generate a random number between -180 and 180
 		data = append(data, dto.ShipWebsocketResponse{

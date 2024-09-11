@@ -940,7 +940,7 @@ func (r *ship) ShipInBatch(ctx context.Context, start int, end int) (*[]model.Sh
 					`)
 					query = query.Where("ships.updated_at BETWEEN ? AND ?", lastUpdate.Add(-10*time.Second), lastUpdate.Add(10*time.Second)).Order("ships.created_at DESC")
 
-					if err := query.Find(&result).Error; err != nil {
+					if err := query.Find(&result).Debug().Error; err != nil {
 						tx.Rollback()
 						return nil, false, err
 					}
@@ -1001,7 +1001,7 @@ func (r *ship) ShipInBatch(ctx context.Context, start int, end int) (*[]model.Sh
 
 	query = query.Offset(start).Limit(end - start).Order("ships.created_at ASC")
 
-	if err := query.Find(&result).Error; err != nil {
+	if err := query.Find(&result).Debug().Error; err != nil {
 		tx.Rollback()
 		return nil, false, err
 	}
