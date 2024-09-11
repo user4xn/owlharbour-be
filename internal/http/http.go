@@ -9,6 +9,7 @@ import (
 	User "owlharbour-api/internal/app/user"
 	"owlharbour-api/internal/factory"
 	"owlharbour-api/internal/middleware"
+	"owlharbour-api/pkg/util"
 	"time"
 
 	ratelimit "github.com/JGLTechnologies/gin-rate-limit"
@@ -60,9 +61,11 @@ func NewHttp(g *gin.Engine, f *factory.Factory) {
 func Index(g *gin.Engine) {
 	g.GET("/", func(context *gin.Context) {
 		context.JSON(200, struct {
-			Name string `json:"name"`
+			Name    string `json:"name"`
+			Version string `json:"version"`
 		}{
-			Name: "Simpel Api",
+			Name:    "owlharbour-api",
+			Version: util.GetEnv("APP_VERSION", "1.0"),
 		})
 	})
 }
